@@ -7,8 +7,17 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Mock auth for build - replace with proper auth in production
-    const mockUserId = 'mock-user-id';
+    const supabase = createClient();
+    
+    // Get the authenticated user from Supabase
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Please sign in to update achievements' },
+        { status: 401 }
+      );
+    }
 
     const achievementId = params.id;
     const body = await request.json();
@@ -44,7 +53,7 @@ export async function PATCH(
     const { data: facultyProfile, error: facultyError } = await supabase
       .from('faculty_profiles')
       .select('id, approval_power')
-      .eq('user_id', mockUserId)
+      .eq('user_id', user.id)
       .single();
 
     if (facultyError || !facultyProfile) {
@@ -80,7 +89,7 @@ export async function PATCH(
     // Update the achievement
     const updateData: Record<string, any> = {
       status,
-      approved_by: status === 'approved' ? mockUserId : null,
+      approved_by: status === 'approved' ? user.id : null,
       approved_at: status === 'approved' ? new Date().toISOString() : null,
     };
 
@@ -147,7 +156,6 @@ export async function GET(
 ) {
   try {
     // Mock auth for build - replace with proper auth in production
-    const mockUserId = 'mock-user-id';
 
     const achievementId = params.id;
     const supabase = createClient();

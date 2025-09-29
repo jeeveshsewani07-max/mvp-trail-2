@@ -3,8 +3,17 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
-    // Mock auth for build - replace with proper auth in production
-    const mockUserId = 'mock-user-id';
+    const supabase = createClient();
+    
+    // Get the authenticated user from Supabase
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Please sign in to create achievements' },
+        { status: 401 }
+      );
+    }
 
     const body = await request.json();
     const { categoryId, title, description, dateAchieved, skillTags, isPublic } = body;
@@ -17,13 +26,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createClient();
-
-    // First, get the student profile ID
+    // First, get the student profile ID using the authenticated user
     const { data: studentProfile, error: profileError } = await supabase
       .from('student_profiles')
       .select('id')
-      .eq('user_id', mockUserId)
+      .eq('user_id', user.id)
       .single();
 
     if (profileError || !studentProfile) {
@@ -76,7 +83,6 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // Mock auth for build - replace with proper auth in production
-    const mockUserId = 'mock-user-id';
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
@@ -123,7 +129,7 @@ export async function GET(request: NextRequest) {
       const { data: userProfile } = await supabase
         .from('users')
         .select('role')
-        .eq('id', mockUserId)
+        .eq('id', user.id)
         .single();
 
       if (userProfile?.role === 'student') {
@@ -131,7 +137,7 @@ export async function GET(request: NextRequest) {
         const { data: studentProfile } = await supabase
           .from('student_profiles')
           .select('id')
-          .eq('user_id', mockUserId)
+          .eq('user_id', user.id)
           .single();
 
         if (studentProfile) {
