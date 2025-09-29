@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Icons } from '@/components/icons';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { getAuthCallbackUrl } from '@/lib/utils/site-url';
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
@@ -45,7 +46,7 @@ export default function SignUpPage() {
             full_name: formData.fullName,
             role: formData.role,
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
+          emailRedirectTo: getAuthCallbackUrl('/onboarding'),
         },
       });
 
@@ -70,7 +71,7 @@ export default function SignUpPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
+          redirectTo: getAuthCallbackUrl('/onboarding'),
           queryParams: {
             role: formData.role || 'student',
           },
