@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { useAchievements } from '@/hooks/use-achievements';
 import { useDashboardUpdates } from '@/hooks/use-dashboard-updates';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -163,8 +164,8 @@ const mockFacultyData = {
 };
 
 export function FacultyDashboard() {
-  // Mock user ID for development - in production this would come from auth context
-  const userId = 'faculty-user-123';
+  const { data: session } = useSession();
+  const userId = session?.user?.id || 'faculty-user-123';
   
   // Use both mock data and real-time updates
   const [data, setData] = useState(mockFacultyData);
