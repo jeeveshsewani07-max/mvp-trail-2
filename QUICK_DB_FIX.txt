@@ -1,0 +1,14 @@
+# QUICK DATABASE FIX
+
+## The Error:
+`Failed to create profile: Could not find the table 'public.student_profiles'`
+
+## The Solution:
+1. Open Supabase Dashboard: https://supabase.com/dashboard
+2. Select project: nlnqupvckrvyinabvegg
+3. SQL Editor → New query
+4. Copy entire contents of supabase-schema.sql
+5. Click Run
+
+## Result:
+✅ Tables created → Error fixed → App works on Vercel
