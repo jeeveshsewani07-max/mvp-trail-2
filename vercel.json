@@ -1,15 +1,6 @@
 {
-  "framework": "nextjs",
   "buildCommand": "npm run build",
   "installCommand": "npm ci",
-  "functions": {
-    "app/api/**/*.ts": {
-      "runtime": "nodejs18.x"
-    }
-  },
-  "env": {
-    "NODE_ENV": "production"
-  },
   "build": {
     "env": {
       "NEXTAUTH_SECRET": "build-time-secret",
