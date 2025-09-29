@@ -175,9 +175,9 @@ export function RecruiterDashboard() {
     }
   };
   return (
-    <div className="space-y-6 first:mt-0">
+    <div className="space-y-6">
       {/* Welcome Message */}
-      <div className="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg p-6 mt-0">
+      <div className="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg p-6">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold mb-2">

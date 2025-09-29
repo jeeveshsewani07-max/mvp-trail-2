@@ -48,7 +48,7 @@ export function TopNav({ onMenuClick }: TopNavProps) {
   };
 
   return (
-    <header className="fixed top-0 inset-x-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b lg:pl-64">
+    <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center justify-between px-4 lg:px-8">
         {/* Left side */}
         <div className="flex items-center gap-4">
@@ -175,7 +175,7 @@ export function TopNav({ onMenuClick }: TopNavProps) {
           </DropdownMenu>
         </div>
       </div>
-    </header>
+    </div>
   );
 }
 

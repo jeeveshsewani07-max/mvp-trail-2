@@ -26,7 +26,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    /* 
+     * FIXED LAYOUT STRUCTURE:
+     * - Use flex instead of fixed positioning to eliminate white gaps
+     * - Sidebar takes fixed width (w-64) on large screens, hidden on mobile
+     * - Main content flexes to fill remaining space
+     * - No manual padding calculations needed - flex handles it automatically
+     */
+    <div className="min-h-screen bg-background flex">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
@@ -35,18 +42,41 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         />
       )}
 
-      {/* Sidebar */}
-      <Sidebar
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
+      {/* Sidebar - Fixed width on large screens, overlay on mobile */}
+      <aside className="hidden lg:flex lg:w-64 lg:flex-col">
+        <Sidebar
+          open={true} // Always open on large screens
+          onClose={() => setSidebarOpen(false)}
+        />
+      </aside>
 
-      {/* Main content */}
-      <div className="lg:pl-64">
-        <TopNav onMenuClick={() => setSidebarOpen(true)} />
-        {/* Fixed header height: h-16 (64px). Apply consistent padding top. */}
-        <main className="m-0 p-0 pt-16">
-          <div className="mx-auto max-w-7xl px-4 lg:px-8 pb-6 overflow-hidden">
+      {/* Mobile Sidebar - Only shows when open */}
+      <aside className="lg:hidden">
+        <Sidebar
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
+      </aside>
+
+      {/* Main content area - Flexes to fill remaining space */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* 
+         * TOP NAVIGATION:
+         * - Sticky header that spans the full width of main content
+         * - No manual left padding needed - flex layout handles positioning
+         */}
+        <header className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+          <TopNav onMenuClick={() => setSidebarOpen(true)} />
+        </header>
+
+        {/* 
+         * PAGE CONTENT:
+         * - Flexible main content that expands to fill available space
+         * - Proper padding and max-width for content readability
+         * - No pt-16 needed since header is now in flow
+         */}
+        <main className="flex-1 overflow-auto">
+          <div className="mx-auto max-w-7xl px-4 lg:px-8 py-6">
             {children}
           </div>
         </main>

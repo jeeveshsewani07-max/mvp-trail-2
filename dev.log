@@ -1,0 +1,20 @@
+﻿
+> smart-student-hub@0.1.0 dev
+> next dev
+
+   Γû▓ Next.js 14.0.4
+   - Local:        http://localhost:3001
+   - Environments: .env.local
+
+ Γ£ô Ready in 3.7s
+ Γùï Compiling /middleware ...
+ Γ£ô Compiled /middleware in 635ms (64 modules)
+ Γùï Compiling /not-found ...
+ Γ£ô Compiled /not-found in 5.9s (704 modules)
+ Γ£ô Compiled in 564ms (354 modules)
+ Γ£ô Compiled in 999ms (416 modules)
+ Γ£ô Compiled in 682ms (402 modules)
+ Γùï Compiling /api/storage/health ...
+ Γ£ô Compiled /api/storage/health in 632ms (38 modules)
+ Γùï Compiling /storage-test ...
+ Γ£ô Compiled /storage-test in 999ms (713 modules)

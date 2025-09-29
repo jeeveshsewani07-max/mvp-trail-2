@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -31,8 +31,8 @@ const achievementSchema = z.object({
 
 type AchievementForm = z.infer<typeof achievementSchema>;
 
-// Mock categories - would come from API
-const categories = [
+// Default categories - will be loaded from API
+const defaultCategories = [
   { id: '1', name: 'Technical', icon: '💻', description: 'Programming, software development, technical certifications' },
   { id: '2', name: 'Competition', icon: '🏆', description: 'Hackathons, contests, competitive programming' },
   { id: '3', name: 'Research', icon: '📚', description: 'Research papers, publications, academic projects' },
@@ -50,6 +50,8 @@ export function AddAchievementForm() {
   const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
   const [date, setDate] = useState<Date>();
   const [isDateOpen, setIsDateOpen] = useState(false);
+  const [categories, setCategories] = useState(defaultCategories);
+  const [loadingCategories, setLoadingCategories] = useState(false);
   
   const router = useRouter();
   const certificateInputRef = useRef<HTMLInputElement>(null);
@@ -76,24 +78,62 @@ export function AddAchievementForm() {
   // Get all available skills from categories
   const allSkills = Object.values(skillCategories).flat();
 
+  // Load categories from API
+  useEffect(() => {
+    const loadCategories = async () => {
+      setLoadingCategories(true);
+      try {
+        const response = await fetch('/api/achievements/categories');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.categories) {
+            setCategories(data.categories);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+        // Keep default categories on error
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    loadCategories();
+  }, []);
+
   const onSubmit = async (data: AchievementForm) => {
     setIsLoading(true);
     
     try {
-      // Here you would upload files and submit to API
-      console.log('Form data:', data);
-      console.log('Certificate file:', certificateFile);
-      console.log('Evidence files:', evidenceFiles);
+      // Submit achievement to API
+      const response = await fetch('/api/achievements', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          categoryId: data.categoryId,
+          title: data.title,
+          description: data.description,
+          dateAchieved: data.dateAchieved.toISOString(),
+          skillTags: data.skillTags,
+          isPublic: data.isPublic,
+        }),
+      });
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to submit achievement');
+      }
 
       toast.success('Achievement submitted successfully!');
       toast.info('Your achievement is now pending faculty approval.');
       
       router.push('/achievements');
-    } catch (error) {
-      toast.error('Failed to submit achievement. Please try again.');
+    } catch (error: any) {
+      console.error('Achievement submission error:', error);
+      toast.error(error.message || 'Failed to submit achievement. Please try again.');
     } finally {
       setIsLoading(false);
     }

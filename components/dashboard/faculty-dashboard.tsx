@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAchievements } from '@/hooks/use-achievements';
+import { useDashboardUpdates } from '@/hooks/use-dashboard-updates';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +10,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Icons } from '@/components/icons';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
+import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 // Mock data - Enhanced
 const mockFacultyData = {
@@ -149,19 +163,159 @@ const mockFacultyData = {
 };
 
 export function FacultyDashboard() {
-  const data = mockFacultyData;
-  const [selectedAchievement, setSelectedAchievement] = useState(null);
-
-  const handleApprove = async (achievementId: string) => {
-    // Simulate API call
-    console.log('Approving achievement:', achievementId);
-    // Would update the achievement status in real app
+  // Mock user ID for development - in production this would come from auth context
+  const userId = 'faculty-user-123';
+  
+  // Use both mock data and real-time updates
+  const [data, setData] = useState(mockFacultyData);
+  const [selectedAchievement, setSelectedAchievement] = useState<any>(null);
+  
+  // Real-time achievements data
+  const { 
+    achievements: pendingAchievements, 
+    loading: loadingAchievements, 
+    refetch 
+  } = useAchievements('pending');
+  
+  // Real-time dashboard stats
+  const {
+    stats: liveStats,
+    loading: loadingStats,
+    refresh: refreshStats
+  } = useDashboardUpdates({
+    userId,
+    role: 'faculty',
+    refreshInterval: 10000 // 10 seconds
+  });
+  
+  // Update data with live stats when available
+  useEffect(() => {
+    if (!loadingStats && liveStats) {
+      setData(prevData => ({
+        ...prevData,
+        stats: {
+          ...prevData.stats,
+          pendingApprovals: liveStats.pendingApprovals || prevData.stats.pendingApprovals,
+          mentees: liveStats.mentees || prevData.stats.mentees,
+          eventsCreated: liveStats.eventsCreated || prevData.stats.eventsCreated,
+          achievementsApproved: liveStats.achievementsApproved || prevData.stats.achievementsApproved,
+          thisWeekApprovals: liveStats.thisWeekApprovals || prevData.stats.thisWeekApprovals,
+        }
+      }));
+    }
+  }, [liveStats, loadingStats]);
+  
+  // Dialog states
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [viewEvidenceDialogOpen, setViewEvidenceDialogOpen] = useState(false);
+  const [viewStudentDialogOpen, setViewStudentDialogOpen] = useState(false);
+  
+  // Form states
+  const [credits, setCredits] = useState(0);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Open approve dialog
+  const openApproveDialog = (achievement: any) => {
+    setSelectedAchievement(achievement);
+    setCredits(achievement.credits || 10); // Default or existing credits
+    setApproveDialogOpen(true);
+  };
+  
+  // Open reject dialog
+  const openRejectDialog = (achievement: any) => {
+    setSelectedAchievement(achievement);
+    setRejectionReason('');
+    setRejectDialogOpen(true);
+  };
+  
+  // Open view evidence dialog
+  const openViewEvidenceDialog = (achievement: any) => {
+    setSelectedAchievement(achievement);
+    setViewEvidenceDialogOpen(true);
+  };
+  
+  // Open view student dialog
+  const openViewStudentDialog = (achievement: any) => {
+    setSelectedAchievement(achievement);
+    setViewStudentDialogOpen(true);
+  };
+  
+  // Handle approve submission
+  const handleApprove = async () => {
+    if (!selectedAchievement) return;
+    
+    setIsProcessing(true);
+    try {
+      const response = await fetch(`/api/achievements/${selectedAchievement.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'approved',
+          credits: Number(credits),
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to approve achievement');
+      }
+      
+      toast.success('Achievement approved successfully!');
+      setApproveDialogOpen(false);
+      
+      // Refresh all data
+      refetch();
+      refreshStats();
+      
+    } catch (error: any) {
+      console.error('Approval error:', error);
+      toast.error(error.message || 'Failed to approve achievement');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const handleReject = async (achievementId: string) => {
-    // Simulate API call  
-    console.log('Rejecting achievement:', achievementId);
-    // Would update the achievement status in real app
+  // Handle reject submission
+  const handleReject = async () => {
+    if (!selectedAchievement) return;
+    
+    setIsProcessing(true);
+    try {
+      const response = await fetch(`/api/achievements/${selectedAchievement.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'rejected',
+          rejectionReason,
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to reject achievement');
+      }
+      
+      toast.success('Achievement rejected');
+      setRejectDialogOpen(false);
+      
+      // Refresh all data
+      refetch();
+      refreshStats();
+      
+    } catch (error: any) {
+      console.error('Rejection error:', error);
+      toast.error(error.message || 'Failed to reject achievement');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const getPriorityColor = (priority: string) => {
@@ -181,7 +335,7 @@ export function FacultyDashboard() {
   };
 
   return (
-    <div className="space-y-6 dashboard-content -mt-6 sm:-mt-8 lg:-mt-10">
+    <div className="space-y-6">
       {/* Enhanced Welcome Message */}
       <div className="bg-gradient-to-r from-green-500 to-blue-600 text-white rounded-lg p-6">
         <div className="flex items-center justify-between">
@@ -203,7 +357,7 @@ export function FacultyDashboard() {
           </div>
           <div className="hidden md:flex items-center gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold">{data.stats.pendingApprovals}</div>
+              <div className="text-2xl font-bold">{pendingAchievements.length}</div>
               <div className="text-sm text-green-100">Pending</div>
             </div>
           </div>
@@ -229,7 +383,7 @@ export function FacultyDashboard() {
             <Icons.clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-600">{data.stats.pendingApprovals}</div>
+            <div className="text-2xl font-bold text-amber-600">{pendingAchievements.length}</div>
             <p className="text-xs text-muted-foreground">Awaiting review</p>
           </CardContent>
         </Card>
@@ -270,7 +424,7 @@ export function FacultyDashboard() {
             <h3 className="text-lg font-semibold">Pending Achievement Approvals</h3>
             <div className="flex items-center gap-2">
               <Badge variant="outline">
-                {data.stats.pendingApprovals} pending
+                {pendingAchievements.length} pending
               </Badge>
               <Button variant="outline" size="sm">
                 <Icons.filter className="h-4 w-4 mr-2" />
@@ -280,8 +434,35 @@ export function FacultyDashboard() {
           </div>
 
           <div className="grid gap-4">
-            {data.pendingAchievements.map((achievement) => (
-              <Card key={achievement.id} className={`card-hover border-l-4 ${getPriorityColor(achievement.priority)}`}>
+            {loadingAchievements ? (
+              // Loading skeleton
+              Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 bg-muted rounded-lg" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-muted rounded w-3/4" />
+                        <div className="h-3 bg-muted rounded w-1/2" />
+                        <div className="h-3 bg-muted rounded w-2/3" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : pendingAchievements.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <Icons.checkCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No Pending Approvals</h3>
+                  <p className="text-muted-foreground">
+                    All achievements have been reviewed. New submissions will appear here.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              pendingAchievements.map((achievement) => (
+              <Card key={achievement.id} className="card-hover border-l-4 border-l-amber-500">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-start gap-4">
@@ -291,29 +472,27 @@ export function FacultyDashboard() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <h4 className="font-semibold text-lg">{achievement.title}</h4>
-                          <Badge variant={achievement.priority === 'high' ? 'destructive' : achievement.priority === 'medium' ? 'secondary' : 'outline'}>
-                            {achievement.priority}
-                          </Badge>
+                          <Badge variant="secondary">pending</Badge>
                         </div>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
-                          <span className="font-medium">{achievement.studentName}</span>
-                          <span>ID: {achievement.studentId}</span>
-                          <span>{achievement.category}</span>
+                          <span className="font-medium">{achievement.student_profiles.users.full_name}</span>
+                          <span>{achievement.achievement_categories.name}</span>
                         </div>
-                        <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-                          {achievement.description}
-                        </p>
+                        {achievement.description && (
+                          <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                            {achievement.description}
+                          </p>
+                        )}
                         <div className="flex flex-wrap gap-2 mb-3">
-                          {achievement.skillTags.map((skill) => (
+                          {achievement.skill_tags.map((skill) => (
                             <Badge key={skill} variant="outline" className="text-xs">
                               {skill}
                             </Badge>
                           ))}
                         </div>
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <span>Achieved: {formatDate(achievement.dateAchieved)}</span>
-                          <span>Submitted: {formatDate(achievement.dateSubmitted)}</span>
-                          <span>{achievement.evidenceFiles.length} evidence file(s)</span>
+                          <span>Achieved: {formatDate(achievement.date_achieved)}</span>
+                          <span>Submitted: {formatDate(achievement.created_at)}</span>
                         </div>
                       </div>
                     </div>
@@ -325,27 +504,35 @@ export function FacultyDashboard() {
                         <div className="text-lg font-bold text-primary">{achievement.credits}</div>
                         <div className="text-xs text-muted-foreground">credits</div>
                       </div>
-                      <Button variant="outline" size="sm">
-                        <Icons.eye className="h-4 w-4 mr-2" />
-                        View Evidence
-                      </Button>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => openViewStudentDialog(achievement)}
+                      >
                         <Icons.user className="h-4 w-4 mr-2" />
                         View Student
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => openViewEvidenceDialog(achievement)}
+                      >
+                        <Icons.fileText className="h-4 w-4 mr-2" />
+                        Evidence
                       </Button>
                     </div>
                     <div className="flex gap-2">
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => handleReject(achievement.id)}
+                        onClick={() => openRejectDialog(achievement)}
                       >
                         <Icons.x className="h-4 w-4 mr-1" />
                         Reject
                       </Button>
                       <Button 
                         size="sm"
-                        onClick={() => handleApprove(achievement.id)}
+                        onClick={() => openApproveDialog(achievement)}
                       >
                         <Icons.check className="h-4 w-4 mr-1" />
                         Approve
@@ -354,7 +541,8 @@ export function FacultyDashboard() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              ))
+            )}
           </div>
         </TabsContent>
 
@@ -407,13 +595,23 @@ export function FacultyDashboard() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => toast.info(`Messaging ${mentee.name}...`)}
+                      >
                         <Icons.messageCircle className="h-4 w-4 mr-1" />
                         Message
                       </Button>
-                      <Button variant="outline" size="sm">
-                        <Icons.eye className="h-4 w-4 mr-1" />
-                        View Profile
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        asChild
+                      >
+                        <Link href={`/students/${mentee.id}`}>
+                          <Icons.eye className="h-4 w-4 mr-1" />
+                          View Profile
+                        </Link>
                       </Button>
                     </div>
                   </div>
@@ -524,11 +722,21 @@ export function FacultyDashboard() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        <Icons.edit className="h-4 w-4 mr-1" />
-                        Edit
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        asChild
+                      >
+                        <Link href={`/events/edit/${event.id}`}>
+                          <Icons.edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Link>
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => toast.info(`Viewing ${event.registrations} participants for ${event.title}`)}
+                      >
                         <Icons.users className="h-4 w-4 mr-1" />
                         Participants
                       </Button>
@@ -540,6 +748,260 @@ export function FacultyDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      {/* Approve Dialog */}
+      <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Approve Achievement</DialogTitle>
+            <DialogDescription>
+              Assign credits and approve this achievement.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {selectedAchievement && (
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="title">Achievement</Label>
+                  <div className="text-sm font-medium">{selectedAchievement.title}</div>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="student">Student</Label>
+                  <div className="text-sm">
+                    {selectedAchievement.student_profiles?.users?.full_name || 'Student Name'}
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="credits">Credits to Award</Label>
+                  <Input
+                    id="credits"
+                    type="number"
+                    value={credits}
+                    onChange={(e) => setCredits(Number(e.target.value))}
+                    min={1}
+                    max={50}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApproveDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleApprove} disabled={isProcessing}>
+              {isProcessing ? (
+                <>
+                  <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                'Approve'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Reject Dialog */}
+      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Reject Achievement</DialogTitle>
+            <DialogDescription>
+              Provide a reason for rejecting this achievement.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {selectedAchievement && (
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="title">Achievement</Label>
+                  <div className="text-sm font-medium">{selectedAchievement.title}</div>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="student">Student</Label>
+                  <div className="text-sm">
+                    {selectedAchievement.student_profiles?.users?.full_name || 'Student Name'}
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="reason">Rejection Reason</Label>
+                  <Textarea
+                    id="reason"
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    placeholder="Please provide specific feedback on why this achievement was rejected"
+                    rows={4}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleReject} 
+              disabled={isProcessing || !rejectionReason.trim()}
+            >
+              {isProcessing ? (
+                <>
+                  <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                'Reject'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* View Evidence Dialog */}
+      <Dialog open={viewEvidenceDialogOpen} onOpenChange={setViewEvidenceDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Achievement Evidence</DialogTitle>
+            <DialogDescription>
+              Review supporting documents and evidence.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto">
+            {selectedAchievement && (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-sm font-medium">Achievement Details</h3>
+                  <p className="text-sm mt-1">{selectedAchievement.description}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium">Evidence Files</h3>
+                  <div className="grid grid-cols-1 gap-2 mt-2">
+                    {selectedAchievement.evidence_files?.length > 0 ? (
+                      selectedAchievement.evidence_files.map((file: string, index: number) => (
+                        <div 
+                          key={index}
+                          className="flex items-center p-2 border rounded-md bg-muted/50"
+                        >
+                          <Icons.fileText className="h-5 w-5 mr-2 text-blue-500" />
+                          <span className="text-sm flex-1 truncate">{file}</span>
+                          <Button variant="ghost" size="sm">
+                            <Icons.externalLink className="h-4 w-4" />
+                            <span className="sr-only">View</span>
+                          </Button>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No evidence files attached</p>
+                    )}
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium">Skills & Tags</h3>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {selectedAchievement.skill_tags?.map((skill: string, index: number) => (
+                      <Badge key={index} variant="outline">
+                        {skill}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="text-sm font-medium">Date Achieved</h3>
+                    <p className="text-sm mt-1">
+                      {selectedAchievement.date_achieved ? 
+                        formatDate(selectedAchievement.date_achieved) : 'Not specified'}
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium">Date Submitted</h3>
+                    <p className="text-sm mt-1">
+                      {selectedAchievement.created_at ? 
+                        formatDate(selectedAchievement.created_at) : 'Not specified'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewEvidenceDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* View Student Dialog */}
+      <Dialog open={viewStudentDialogOpen} onOpenChange={setViewStudentDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Student Profile</DialogTitle>
+            <DialogDescription>
+              View student details and performance.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedAchievement && selectedAchievement.student_profiles && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Icons.user className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">
+                    {selectedAchievement.student_profiles.users?.full_name || 'Student Name'}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedAchievement.student_profiles.users?.email || 'student@example.com'}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader className="py-2">
+                    <CardTitle className="text-sm">Total Credits</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-primary">
+                      {selectedAchievement.student_profiles.total_credits || 0}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="py-2">
+                    <CardTitle className="text-sm">Achievements</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {selectedAchievement.student_profiles.achievements || 0}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setViewStudentDialogOpen(false)}>
+                  Close
+                </Button>
+                <Button asChild>
+                  <Link href={`/students/${selectedAchievement.student_profiles.id}`}>
+                    <Icons.externalLink className="h-4 w-4 mr-2" />
+                    Full Profile
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

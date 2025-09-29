@@ -192,10 +192,19 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile sidebar */}
+      {/* 
+       * SIDEBAR CONTAINER:
+       * - Mobile: Fixed overlay positioned with transform
+       * - Desktop: Flex item that takes full height
+       * - The parent layout controls width (w-64) and flex behavior
+       */}
       <div
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 lg:static lg:inset-auto lg:translate-x-0 transform transition-transform duration-200 ease-in-out border-r border-gray-200 dark:border-gray-800',
+          'bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800',
+          // Mobile styles: fixed overlay with transform
+          'lg:flex lg:flex-col lg:h-full',
+          // Mobile positioning and animation
+          'fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-200 ease-in-out lg:static lg:inset-auto lg:transform-none',
           open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
