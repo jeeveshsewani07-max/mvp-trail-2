@@ -273,9 +273,11 @@ export function StudentDashboard() {
                   </div>
                 </div>
 
-                <Button className="w-full" size="sm">
-                  <Icons.edit className="h-4 w-4 mr-2" />
-                  Complete Profile
+                <Button className="w-full" size="sm" asChild>
+                  <Link href="/profile">
+                    <Icons.edit className="h-4 w-4 mr-2" />
+                    Complete Profile
+                  </Link>
                 </Button>
               </CardContent>
             </Card>

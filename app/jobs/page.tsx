@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -388,8 +389,10 @@ export default function JobsPage() {
                 <p className="text-muted-foreground">
                   Complete your profile to get personalized job recommendations based on your skills and interests.
                 </p>
-                <Button className="mt-4">
-                  Complete Profile
+                <Button className="mt-4" asChild>
+                  <Link href="/profile">
+                    Complete Profile
+                  </Link>
                 </Button>
               </CardContent>
             </Card>
