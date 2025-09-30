@@ -47,8 +47,6 @@ export async function PATCH(
       );
     }
 
-    const supabase = createClient();
-
     // First, get the faculty profile to verify approval permissions
     const { data: facultyProfile, error: facultyError } = await supabase
       .from('faculty_profiles')
@@ -155,10 +153,19 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Mock auth for build - replace with proper auth in production
+    const supabase = createClient();
+    
+    // Get the authenticated user from Supabase
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Please sign in to view achievements' },
+        { status: 401 }
+      );
+    }
 
     const achievementId = params.id;
-    const supabase = createClient();
 
     const { data: achievement, error } = await supabase
       .from('achievements')
