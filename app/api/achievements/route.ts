@@ -4,10 +4,13 @@ import { createClient } from '@/lib/supabase/server';
 export async function POST(request: NextRequest) {
   try {
     const supabase = createClient();
-    
+
     // Get the authenticated user from Supabase
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please sign in to create achievements' },
@@ -16,7 +19,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { categoryId, title, description, dateAchieved, skillTags, isPublic } = body;
+    const {
+      categoryId,
+      title,
+      description,
+      dateAchieved,
+      skillTags,
+      isPublic,
+    } = body;
 
     // Validation
     if (!categoryId || !title || !dateAchieved) {
@@ -68,9 +78,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       achievement,
-      message: 'Achievement submitted successfully! It is now pending faculty approval.',
+      message:
+        'Achievement submitted successfully! It is now pending faculty approval.',
     });
-
   } catch (error: any) {
     console.error('Achievement API error:', error);
     return NextResponse.json(
@@ -82,17 +92,26 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // Mock auth for build - replace with proper auth in production
+    const supabase = createClient();
+
+    // Get the authenticated user from Supabase
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Please sign in to view achievements' },
+        { status: 401 }
+      );
+    }
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const studentId = searchParams.get('student_id');
 
-    const supabase = createClient();
-
-    let query = supabase
-      .from('achievements')
-      .select(`
+    let query = supabase.from('achievements').select(`
         id,
         title,
         description,
@@ -128,7 +147,7 @@ export async function GET(request: NextRequest) {
     if (!studentId) {
       const { data: userProfile } = await supabase
         .from('users')
-        .select('role')
+        .select('id, role')
         .eq('id', user.id)
         .single();
 
@@ -137,7 +156,7 @@ export async function GET(request: NextRequest) {
         const { data: studentProfile } = await supabase
           .from('profiles')
           .select('id')
-          .eq('user_id', user.id)
+          .eq('user_id', userProfile?.id)
           .single();
 
         if (studentProfile) {
@@ -147,7 +166,9 @@ export async function GET(request: NextRequest) {
       // Faculty can see all pending achievements (no additional filter needed)
     }
 
-    const { data: achievements, error } = await query.order('created_at', { ascending: false });
+    const { data: achievements, error } = await query.order('created_at', {
+      ascending: false,
+    });
 
     if (error) {
       console.error('Achievement fetch error:', error);
@@ -161,7 +182,6 @@ export async function GET(request: NextRequest) {
       success: true,
       achievements: achievements || [],
     });
-
   } catch (error: any) {
     console.error('Achievement GET API error:', error);
     return NextResponse.json(

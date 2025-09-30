@@ -90,7 +90,7 @@ CREATE TABLE departments (
 
 CREATE UNIQUE INDEX dept_institution_code_idx ON departments(institution_id, code);
 
-CREATE TABLE student_profiles (
+CREATE TABLE profiles (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE UNIQUE,
   institution_id UUID NOT NULL REFERENCES institutions(id),
@@ -119,8 +119,8 @@ CREATE TABLE student_profiles (
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
-CREATE UNIQUE INDEX student_profiles_user_idx ON student_profiles(user_id);
-CREATE INDEX student_profiles_roll_number_idx ON student_profiles(roll_number);
+CREATE UNIQUE INDEX profiles_user_idx ON profiles(user_id);
+CREATE INDEX profiles_roll_number_idx ON profiles(roll_number);
 
 CREATE TABLE faculty_profiles (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -146,7 +146,7 @@ CREATE UNIQUE INDEX faculty_profiles_user_idx ON faculty_profiles(user_id);
 
 CREATE TABLE recruiter_profiles (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+  profile_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE UNIQUE,
   company_name TEXT NOT NULL,
   designation TEXT NOT NULL,
   company_website TEXT,
@@ -162,7 +162,7 @@ CREATE TABLE recruiter_profiles (
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
-CREATE UNIQUE INDEX recruiter_profiles_user_idx ON recruiter_profiles(user_id);
+CREATE UNIQUE INDEX recruiter_profiles_profile_idx ON recruiter_profiles(profile_id);
 
 -- Achievement System
 CREATE TABLE achievement_categories (
@@ -178,7 +178,7 @@ CREATE TABLE achievement_categories (
 
 CREATE TABLE achievements (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  student_id UUID NOT NULL REFERENCES student_profiles(id) ON DELETE CASCADE,
+  student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   category_id UUID NOT NULL REFERENCES achievement_categories(id),
   title TEXT NOT NULL,
   description TEXT,
@@ -237,7 +237,7 @@ CREATE INDEX events_start_date_idx ON events(start_date);
 CREATE TABLE event_participations (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-  student_id UUID NOT NULL REFERENCES student_profiles(id) ON DELETE CASCADE,
+  student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   role TEXT NOT NULL,
   status TEXT DEFAULT 'registered',
   credits_earned INTEGER DEFAULT 0,
@@ -287,7 +287,7 @@ CREATE INDEX job_postings_deadline_idx ON job_postings(application_deadline);
 CREATE TABLE job_applications (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   job_id UUID NOT NULL REFERENCES job_postings(id) ON DELETE CASCADE,
-  student_id UUID NOT NULL REFERENCES student_profiles(id) ON DELETE CASCADE,
+  student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   cover_letter TEXT,
   resume_url TEXT,
   portfolio_url TEXT,
@@ -332,7 +332,7 @@ CREATE TABLE badges (
 
 CREATE TABLE student_badges (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  student_id UUID NOT NULL REFERENCES student_profiles(id) ON DELETE CASCADE,
+  student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   badge_id UUID NOT NULL REFERENCES badges(id) ON DELETE CASCADE,
   earned_at TIMESTAMP DEFAULT NOW() NOT NULL,
   verification_data JSONB
@@ -377,7 +377,7 @@ INSERT INTO badges (name, description, icon, criteria, rarity) VALUES
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE student_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE faculty_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE recruiter_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE achievements ENABLE ROW LEVEL SECURITY;
@@ -390,17 +390,17 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view their own data" ON users FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update their own data" ON users FOR UPDATE USING (auth.uid() = id);
 
-CREATE POLICY "Students can view their own profile" ON student_profiles FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Students can update their own profile" ON student_profiles FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Students can insert their own profile" ON student_profiles FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Students can view their own profile" ON profiles FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Students can update their own profile" ON profiles FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Students can insert their own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Faculty can view their own profile" ON faculty_profiles FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Faculty can update their own profile" ON faculty_profiles FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Faculty can insert their own profile" ON faculty_profiles FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Recruiters can view their own profile" ON recruiter_profiles FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Recruiters can update their own profile" ON recruiter_profiles FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Recruiters can insert their own profile" ON recruiter_profiles FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Recruiters can view their own profile" ON recruiter_profiles FOR SELECT USING (auth.uid() IN (SELECT user_id FROM profiles WHERE id = profile_id));
+CREATE POLICY "Recruiters can update their own profile" ON recruiter_profiles FOR UPDATE USING (auth.uid() IN (SELECT user_id FROM profiles WHERE id = profile_id));
+CREATE POLICY "Recruiters can insert their own profile" ON recruiter_profiles FOR INSERT WITH CHECK (auth.uid() IN (SELECT user_id FROM profiles WHERE id = profile_id));
 
 -- Create functions for updated_at timestamps
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -414,7 +414,7 @@ $$ language 'plpgsql';
 -- Create triggers for updated_at
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_institutions_updated_at BEFORE UPDATE ON institutions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_student_profiles_updated_at BEFORE UPDATE ON student_profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_faculty_profiles_updated_at BEFORE UPDATE ON faculty_profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_recruiter_profiles_updated_at BEFORE UPDATE ON recruiter_profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_achievements_updated_at BEFORE UPDATE ON achievements FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

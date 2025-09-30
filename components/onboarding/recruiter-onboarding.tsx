@@ -8,7 +8,13 @@ import { User } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Icons } from '@/components/icons';
 import { supabase } from '@/lib/supabase/client';
@@ -31,7 +37,10 @@ interface RecruiterOnboardingProps {
   onComplete: () => void;
 }
 
-export function RecruiterOnboarding({ user, onComplete }: RecruiterOnboardingProps) {
+export function RecruiterOnboarding({
+  user,
+  onComplete,
+}: RecruiterOnboardingProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const {
@@ -45,24 +54,56 @@ export function RecruiterOnboarding({ user, onComplete }: RecruiterOnboardingPro
 
   const onSubmit = async (data: RecruiterOnboardingForm) => {
     setIsLoading(true);
-    
+
     try {
-      // Create recruiter profile
-      const { error } = await supabase
-        .from('recruiter_profiles')
-        .insert({
-          user_id: user.id,
-          company_name: data.companyName,
-          designation: data.designation,
-          company_website: data.companyWebsite || null,
-          company_size: data.companySize || null,
-          industry: data.industry,
-          company_description: data.companyDescription || null,
-          linkedin_url: data.linkedinUrl || null,
-          is_verified: false, // Will be verified by admin
-          can_post_jobs: true,
-          credits_balance: 100, // Starting credits
-        });
+      // First, ensure a row exists in profiles table with id = auth.user.id
+      const { data: existingProfile, error: profileCheckError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+
+      if (profileCheckError && profileCheckError.code === 'PGRST116') {
+        // Profile doesn't exist, create it
+        const { error: profileCreateError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            user_id: user.id,
+            roll_number: 'RECRUITER',
+            batch: 'N/A',
+            course: 'N/A',
+            current_year: 0,
+            current_semester: 0,
+            skills: [],
+            interests: [],
+            languages: ['English'],
+            is_profile_complete: false,
+          });
+
+        if (profileCreateError) {
+          throw new Error(
+            'Failed to create profile: ' + profileCreateError.message
+          );
+        }
+      } else if (profileCheckError) {
+        throw profileCheckError;
+      }
+
+      // Create recruiter profile using profile_id
+      const { error } = await supabase.from('recruiter_profiles').insert({
+        profile_id: user.id,
+        company_name: data.companyName,
+        designation: data.designation,
+        company_website: data.companyWebsite || null,
+        company_size: data.companySize || null,
+        industry: data.industry,
+        company_description: data.companyDescription || null,
+        linkedin_url: data.linkedinUrl || null,
+        is_verified: false, // Will be verified by admin
+        can_post_jobs: true,
+        credits_balance: 100, // Starting credits
+      });
 
       if (error) throw error;
 
@@ -84,9 +125,20 @@ export function RecruiterOnboarding({ user, onComplete }: RecruiterOnboardingPro
   ];
 
   const industries = [
-    'Technology', 'Healthcare', 'Finance', 'Education', 'Retail', 'Manufacturing',
-    'Consulting', 'Media & Entertainment', 'Real Estate', 'Transportation',
-    'Energy', 'Government', 'Non-profit', 'Other',
+    'Technology',
+    'Healthcare',
+    'Finance',
+    'Education',
+    'Retail',
+    'Manufacturing',
+    'Consulting',
+    'Media & Entertainment',
+    'Real Estate',
+    'Transportation',
+    'Energy',
+    'Government',
+    'Non-profit',
+    'Other',
   ];
 
   return (
@@ -94,7 +146,7 @@ export function RecruiterOnboarding({ user, onComplete }: RecruiterOnboardingPro
       {/* Company Information */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Company Information</h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="companyName">Company Name *</Label>
@@ -103,7 +155,9 @@ export function RecruiterOnboarding({ user, onComplete }: RecruiterOnboardingPro
               placeholder="Enter your company name"
             />
             {errors.companyName && (
-              <p className="text-sm text-red-500">{errors.companyName.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.companyName.message}
+              </p>
             )}
           </div>
 
@@ -115,7 +169,9 @@ export function RecruiterOnboarding({ user, onComplete }: RecruiterOnboardingPro
               placeholder="https://company.com"
             />
             {errors.companyWebsite && (
-              <p className="text-sm text-red-500">{errors.companyWebsite.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.companyWebsite.message}
+              </p>
             )}
           </div>
         </div>
@@ -170,7 +226,7 @@ export function RecruiterOnboarding({ user, onComplete }: RecruiterOnboardingPro
       {/* Personal Information */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Your Information</h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="designation">Your Designation *</Label>
@@ -179,7 +235,9 @@ export function RecruiterOnboarding({ user, onComplete }: RecruiterOnboardingPro
               placeholder="e.g., HR Manager, Talent Acquisition"
             />
             {errors.designation && (
-              <p className="text-sm text-red-500">{errors.designation.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.designation.message}
+              </p>
             )}
           </div>
 
@@ -191,7 +249,9 @@ export function RecruiterOnboarding({ user, onComplete }: RecruiterOnboardingPro
               placeholder="https://linkedin.com/in/yourprofile"
             />
             {errors.linkedinUrl && (
-              <p className="text-sm text-red-500">{errors.linkedinUrl.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.linkedinUrl.message}
+              </p>
             )}
           </div>
         </div>
@@ -202,10 +262,13 @@ export function RecruiterOnboarding({ user, onComplete }: RecruiterOnboardingPro
         <div className="flex items-start gap-3">
           <Icons.info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
           <div>
-            <h4 className="font-medium text-blue-900 dark:text-blue-100">Account Verification</h4>
+            <h4 className="font-medium text-blue-900 dark:text-blue-100">
+              Account Verification
+            </h4>
             <p className="text-sm text-blue-700 dark:text-blue-200 mt-1">
-              Your recruiter account will be reviewed and verified by our team within 24-48 hours. 
-              You'll receive an email confirmation once approved.
+              Your recruiter account will be reviewed and verified by our team
+              within 24-48 hours. You'll receive an email confirmation once
+              approved.
             </p>
           </div>
         </div>
@@ -222,5 +285,3 @@ export function RecruiterOnboarding({ user, onComplete }: RecruiterOnboardingPro
     </form>
   );
 }
-
-

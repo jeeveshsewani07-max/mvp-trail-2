@@ -11,8 +11,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { Icons } from '@/components/icons';
 import { useAuth } from '@/components/providers';
 import { supabase } from '@/lib/supabase/client';
@@ -21,7 +33,9 @@ import { toast } from 'sonner';
 const jobSchema = z.object({
   title: z.string().min(2, 'Job title is required'),
   description: z.string().min(10, 'Job description is required'),
-  type: z.enum(['full-time', 'part-time', 'internship', 'contract']).default('full-time'),
+  type: z
+    .enum(['full-time', 'part-time', 'internship', 'contract'])
+    .default('full-time'),
   location: z.string().optional().or(z.literal('')),
   isRemote: z.boolean().optional().default(false),
   salaryMin: z.coerce.number().optional(),
@@ -54,11 +68,11 @@ export default function PostJobPage() {
     setSubmitting(true);
 
     try {
-      // Try to fetch recruiter profile id
+      // Try to fetch recruiter profile id using profile_id
       const { data: profile, error: profileError } = await supabase
         .from('recruiter_profiles')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('profile_id', user.id)
         .single();
 
       if (profileError || !profile?.id) {
@@ -67,7 +81,10 @@ export default function PostJobPage() {
           data: {
             job_posting_draft: {
               ...data,
-              skills: (data.skills || '').split(',').map((s) => s.trim()).filter(Boolean),
+              skills: (data.skills || '')
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean),
             },
           },
         });
@@ -135,33 +152,54 @@ export default function PostJobPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">Post a Job</h1>
-            <p className="text-muted-foreground">Create a new job opening for candidates</p>
+            <p className="text-muted-foreground">
+              Create a new job opening for candidates
+            </p>
           </div>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle>Job details</CardTitle>
-            <CardDescription>Provide all the necessary details for this role</CardDescription>
+            <CardDescription>
+              Provide all the necessary details for this role
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="title">Title *</Label>
-                <Input placeholder="e.g., Frontend Engineer" {...register('title')} />
-                {errors.title && <p className="text-sm text-red-500">{errors.title.message}</p>}
+                <Input
+                  placeholder="e.g., Frontend Engineer"
+                  {...register('title')}
+                />
+                {errors.title && (
+                  <p className="text-sm text-red-500">{errors.title.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="description">Description *</Label>
-                <Textarea rows={6} placeholder="Describe responsibilities, requirements, etc." {...register('description')} />
-                {errors.description && <p className="text-sm text-red-500">{errors.description.message}</p>}
+                <Textarea
+                  rows={6}
+                  placeholder="Describe responsibilities, requirements, etc."
+                  {...register('description')}
+                />
+                {errors.description && (
+                  <p className="text-sm text-red-500">
+                    {errors.description.message}
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="type">Type</Label>
-                  <Select onValueChange={(v) => setValue('type', v as JobForm['type'])}>
+                  <Select
+                    onValueChange={(v) =>
+                      setValue('type', v as JobForm['type'])
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
@@ -176,35 +214,54 @@ export default function PostJobPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="location">Location</Label>
-                  <Input placeholder="e.g., Bengaluru / Remote" {...register('location')} />
+                  <Input
+                    placeholder="e.g., Bengaluru / Remote"
+                    {...register('location')}
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="salaryMin">Salary Min (INR)</Label>
-                  <Input type="number" placeholder="e.g., 600000" {...register('salaryMin')} />
+                  <Input
+                    type="number"
+                    placeholder="e.g., 600000"
+                    {...register('salaryMin')}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="salaryMax">Salary Max (INR)</Label>
-                  <Input type="number" placeholder="e.g., 1200000" {...register('salaryMax')} />
+                  <Input
+                    type="number"
+                    placeholder="e.g., 1200000"
+                    {...register('salaryMax')}
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="experience">Experience</Label>
-                  <Input placeholder="e.g., 1-3 years / Fresher" {...register('experience')} />
+                  <Input
+                    placeholder="e.g., 1-3 years / Fresher"
+                    {...register('experience')}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="applicationDeadline">Application deadline</Label>
+                  <Label htmlFor="applicationDeadline">
+                    Application deadline
+                  </Label>
                   <Input type="date" {...register('applicationDeadline')} />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="skills">Skills (comma separated)</Label>
-                <Input placeholder="React, TypeScript, REST" {...register('skills')} />
+                <Input
+                  placeholder="React, TypeScript, REST"
+                  {...register('skills')}
+                />
               </div>
 
               <Button type="submit" disabled={submitting} className="w-full">
@@ -222,5 +279,3 @@ export default function PostJobPage() {
     </DashboardLayout>
   );
 }
-
-
