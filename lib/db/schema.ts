@@ -113,7 +113,7 @@ export const departments = pgTable('departments', {
   institutionCodeIdx: uniqueIndex('dept_institution_code_idx').on(table.institutionId, table.code),
 }));
 
-export const studentProfiles = pgTable('student_profiles', {
+export const studentProfiles = pgTable('profiles', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }).unique(),
   institutionId: uuid('institution_id').notNull().references(() => institutions.id),
@@ -141,8 +141,8 @@ export const studentProfiles = pgTable('student_profiles', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({
-  userIdx: uniqueIndex('student_profiles_user_idx').on(table.userId),
-  rollNumberIdx: index('student_profiles_roll_number_idx').on(table.rollNumber),
+  userIdx: uniqueIndex('profiles_user_idx').on(table.userId),
+  rollNumberIdx: index('profiles_roll_number_idx').on(table.rollNumber),
 }));
 
 export const facultyProfiles = pgTable('faculty_profiles', {

@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
     // Test 5: Student Profiles Table (The failing one!)
     try {
       const { data: profiles, error: profilesError } = await supabase
-        .from('student_profiles')
+        .from('profiles')
         .select('count(*)')
         .limit(1);
       
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
     // Test 6: Check if mock user exists
     try {
       const { data: mockUser, error: mockError } = await supabase
-        .from('student_profiles')
+        .from('profiles')
         .select('id, user_id')
         .eq('user_id', 'mock-user-id')
         .limit(1);

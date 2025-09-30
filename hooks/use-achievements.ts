@@ -10,7 +10,7 @@ interface Achievement {
   credits: number;
   created_at: string;
   updated_at: string;
-  student_profiles: {
+  profiles: {
     id: string;
     users: {
       id: string;

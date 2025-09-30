@@ -60,21 +60,21 @@ export async function GET(request: NextRequest) {
         // Test 3: Can we query a table? (This is where the error likely occurs)
         try {
           const { data: tableData, error: tableError } = await supabase
-            .from('student_profiles')
+            .from('profiles')
             .select('count(*)')
             .limit(1);
           
           diagnostics.connection_tests.table_query = {
             success: !tableError,
             error: tableError?.message || null,
-            table: 'student_profiles',
+            table: 'profiles',
             result: tableData || null,
           };
         } catch (tableErr: any) {
           diagnostics.connection_tests.table_query = {
             success: false,
             error: tableErr.message,
-            table: 'student_profiles',
+            table: 'profiles',
             stack: tableErr.stack,
           };
         }

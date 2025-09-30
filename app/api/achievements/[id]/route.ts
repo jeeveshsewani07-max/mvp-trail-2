@@ -119,14 +119,14 @@ export async function PATCH(
     // If approved, update student profile with new credits
     if (status === 'approved') {
       const { data: studentProfile, error: studentError } = await supabase
-        .from('student_profiles')
+        .from('profiles')
         .select('id, total_credits, achievements')
         .eq('id', achievement.student_id)
         .single();
 
       if (!studentError && studentProfile) {
         await supabase
-          .from('student_profiles')
+          .from('profiles')
           .update({
             total_credits: (studentProfile.total_credits || 0) + credits,
             achievements: (studentProfile.achievements || 0) + 1,
@@ -164,9 +164,9 @@ export async function GET(
       .from('achievements')
       .select(`
         *,
-        student_profiles!achievements_student_id_fkey (
+        profiles!achievements_student_id_fkey (
           id,
-          users!student_profiles_user_id_fkey (
+          users!profiles_user_id_fkey (
             id,
             full_name,
             email

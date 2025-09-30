@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
     // Test 4: Student profiles table test (the problematic one!)
     try {
       const { data: profileTest, error: profileError } = await supabase
-        .from('student_profiles')
+        .from('profiles')
         .select('count(*)')
         .limit(1);
       
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
         success: !profileError,
         error: profileError?.message || null,
         result_count: profileTest?.length || 0,
-        details: profileError ? 'Failed to query student_profiles table - THIS IS THE MAIN ISSUE!' : 'Student profiles table accessible',
+        details: profileError ? 'Failed to query profiles table - THIS IS THE MAIN ISSUE!' : 'Profiles table accessible',
         critical: true
       });
     } catch (profileErr: any) {
@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
         test: 'Student Profiles Table Query', 
         success: false,
         error: profileErr.message,
-        details: 'Exception during student_profiles table query - THIS IS THE MAIN ISSUE!',
+        details: 'Exception during profiles table query - THIS IS THE MAIN ISSUE!',
         critical: true
       });
     }
@@ -165,7 +165,7 @@ export async function GET(request: NextRequest) {
       recommendations: [
         !report.environment_check.supabase_url.exists ? '1. Set NEXT_PUBLIC_SUPABASE_URL in Vercel environment variables' : null,
         !report.environment_check.anon_key.exists ? '2. Set NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel environment variables' : null,
-        report.database_tests.some(t => t.test.includes('Student Profiles') && !t.success) ? '3. Check student_profiles table exists and has proper RLS policies' : null,
+        report.database_tests.some(t => t.test.includes('Student Profiles') && !t.success) ? '3. Check profiles table exists and has proper RLS policies' : null,
         !allTestsPassed ? '4. Check Supabase project status and CORS settings' : null
       ].filter(Boolean)
     }, { 

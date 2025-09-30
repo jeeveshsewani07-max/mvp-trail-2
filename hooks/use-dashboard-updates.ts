@@ -64,7 +64,7 @@ export function useDashboardUpdates({
 
         // Get mentees count
         const { count: menteesCount, error: menteesError } = await supabase
-          .from('student_profiles')
+          .from('profiles')
           .select('*', { count: 'exact', head: true })
           .eq('mentor_id', userId);
 

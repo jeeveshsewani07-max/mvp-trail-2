@@ -476,7 +476,7 @@ export function FacultyDashboard() {
                           <Badge variant="secondary">pending</Badge>
                         </div>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
-                          <span className="font-medium">{achievement.student_profiles.users.full_name}</span>
+                          <span className="font-medium">{achievement.profiles.users.full_name}</span>
                           <span>{achievement.achievement_categories.name}</span>
                         </div>
                         {achievement.description && (
@@ -769,7 +769,7 @@ export function FacultyDashboard() {
                 <div className="grid gap-2">
                   <Label htmlFor="student">Student</Label>
                   <div className="text-sm">
-                    {selectedAchievement.student_profiles?.users?.full_name || 'Student Name'}
+                    {selectedAchievement.profiles?.users?.full_name || 'Student Name'}
                   </div>
                 </div>
                 <div className="grid gap-2">
@@ -823,7 +823,7 @@ export function FacultyDashboard() {
                 <div className="grid gap-2">
                   <Label htmlFor="student">Student</Label>
                   <div className="text-sm">
-                    {selectedAchievement.student_profiles?.users?.full_name || 'Student Name'}
+                    {selectedAchievement.profiles?.users?.full_name || 'Student Name'}
                   </div>
                 </div>
                 <div className="grid gap-2">
@@ -948,7 +948,7 @@ export function FacultyDashboard() {
               View student details and performance.
             </DialogDescription>
           </DialogHeader>
-          {selectedAchievement && selectedAchievement.student_profiles && (
+          {selectedAchievement && selectedAchievement.profiles && (
             <div className="space-y-6">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
@@ -956,10 +956,10 @@ export function FacultyDashboard() {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold">
-                    {selectedAchievement.student_profiles.users?.full_name || 'Student Name'}
+                    {selectedAchievement.profiles.users?.full_name || 'Student Name'}
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    {selectedAchievement.student_profiles.users?.email || 'student@example.com'}
+                    {selectedAchievement.profiles.users?.email || 'student@example.com'}
                   </p>
                 </div>
               </div>
@@ -971,7 +971,7 @@ export function FacultyDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-primary">
-                      {selectedAchievement.student_profiles.total_credits || 0}
+                      {selectedAchievement.profiles.total_credits || 0}
                     </div>
                   </CardContent>
                 </Card>
@@ -982,7 +982,7 @@ export function FacultyDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-blue-600">
-                      {selectedAchievement.student_profiles.achievements || 0}
+                      {selectedAchievement.profiles.achievements || 0}
                     </div>
                   </CardContent>
                 </Card>
@@ -993,7 +993,7 @@ export function FacultyDashboard() {
                   Close
                 </Button>
                 <Button asChild>
-                  <Link href={`/students/${selectedAchievement.student_profiles.id}`}>
+                  <Link href={`/students/${selectedAchievement.profiles.id}`}>
                     <Icons.externalLink className="h-4 w-4 mr-2" />
                     Full Profile
                   </Link>

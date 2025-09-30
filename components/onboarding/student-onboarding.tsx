@@ -180,7 +180,7 @@ export function StudentOnboarding({ user, onComplete }: StudentOnboardingProps) 
       
       // Create student profile
       const { error } = await supabase
-        .from('student_profiles')
+        .from('profiles')
         .insert({
           user_id: user.id,
           institution_id: data.institutionId,

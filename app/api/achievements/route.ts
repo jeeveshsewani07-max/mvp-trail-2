@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     // First, get the student profile ID using the authenticated user
     const { data: studentProfile, error: profileError } = await supabase
-      .from('student_profiles')
+      .from('profiles')
       .select('id')
       .eq('user_id', user.id)
       .single();
@@ -102,9 +102,9 @@ export async function GET(request: NextRequest) {
         credits,
         created_at,
         updated_at,
-        student_profiles!achievements_student_id_fkey (
+        profiles!achievements_student_id_fkey (
           id,
-          users!student_profiles_user_id_fkey (
+          users!profiles_user_id_fkey (
             id,
             full_name,
             email
@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
       if (userProfile?.role === 'student') {
         // Students can only see their own achievements
         const { data: studentProfile } = await supabase
-          .from('student_profiles')
+          .from('profiles')
           .select('id')
           .eq('user_id', user.id)
           .single();
