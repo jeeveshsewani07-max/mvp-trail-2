@@ -3,7 +3,7 @@ import {
   users,
   institutions,
   departments,
-  studentProfiles,
+  profiles,
   facultyProfiles,
   recruiterProfiles,
   achievements,
@@ -21,11 +21,13 @@ import {
 export type User = InferSelectModel<typeof users>;
 export type Institution = InferSelectModel<typeof institutions>;
 export type Department = InferSelectModel<typeof departments>;
-export type StudentProfile = InferSelectModel<typeof studentProfiles>;
+export type StudentProfile = InferSelectModel<typeof profiles>;
 export type FacultyProfile = InferSelectModel<typeof facultyProfiles>;
 export type RecruiterProfile = InferSelectModel<typeof recruiterProfiles>;
 export type Achievement = InferSelectModel<typeof achievements>;
-export type AchievementCategory = InferSelectModel<typeof achievementCategories>;
+export type AchievementCategory = InferSelectModel<
+  typeof achievementCategories
+>;
 export type Event = InferSelectModel<typeof events>;
 export type EventParticipation = InferSelectModel<typeof eventParticipations>;
 export type JobPosting = InferSelectModel<typeof jobPostings>;
@@ -328,7 +330,11 @@ export interface ApiError {
 
 // Privacy and settings types
 export interface PrivacySettings {
-  profileVisibility: 'private' | 'faculty_only' | 'recruiter_visible' | 'public';
+  profileVisibility:
+    | 'private'
+    | 'faculty_only'
+    | 'recruiter_visible'
+    | 'public';
   showEmail: boolean;
   showPhone: boolean;
   showSocialLinks: boolean;
