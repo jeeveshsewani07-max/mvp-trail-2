@@ -58,9 +58,7 @@ export default function LoginPage() {
     setIsGoogleLoading(true);
 
     try {
-      await signIn('google', {
-        callbackUrl: '/auth/login-handler',
-      });
+      await signIn('google');
     } catch (error) {
       console.error('Google sign-in failed', error);
       toast.error('Failed to start Google sign-in');

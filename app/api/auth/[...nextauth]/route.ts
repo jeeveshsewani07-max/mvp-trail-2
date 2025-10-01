@@ -20,7 +20,16 @@ const supabaseAdmin =
 
 async function upsertAppUser(googleUser: any) {
   if (!supabaseAdmin) {
-    throw new Error('Supabase admin client is not configured');
+    // No admin client available; treat as new user and defer profile setup to onboarding
+    return {
+      appUser: {
+        id: undefined as any,
+        email: googleUser.email || '',
+        fullName: googleUser.name || '',
+        role: 'student',
+      } as unknown as DbUser,
+      isNewUser: true,
+    };
   }
 
   const email = googleUser.email?.toLowerCase();
@@ -119,12 +128,15 @@ const authOptions: NextAuthOptions = {
         return '/dashboard';
       } catch (error) {
         console.error('Sign-in error:', error);
-        return false;
+        // Gracefully continue to onboarding if provisioning fails
+        return '/onboarding';
       }
     },
     async jwt({ token, user }) {
       if (user) {
-        token.id = (user as any).appUser?.id ?? token.id;
+        // Ensure token.id is always set (fallback to sub)
+        token.id =
+          (user as any).appUser?.id ?? (token.id || (token as any).sub);
         token.role = (user as any).role ?? token.role;
         token.needsOnboarding = (user as any).needsOnboarding ?? false;
         token.appUser = (user as any).appUser ?? null;
@@ -133,7 +145,7 @@ const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id;
+        (session.user as any).id = token.id || (token as any).sub;
         (session.user as any).role = token.role;
         (session.user as any).needsOnboarding = token.needsOnboarding;
       }
