@@ -1,13 +1,16 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from 'next-themes';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from 'sonner';
-import { supabase } from '@/lib/supabase/client';
-import { User, type AuthError } from '@supabase/supabase-js';
+import {
+  SessionProvider,
+  useSession,
+  signOut as nextAuthSignOut,
+} from 'next-auth/react';
+import { User } from '@supabase/supabase-js';
 import type { User as DbUser } from '@/types';
 
 // Auth Context
@@ -34,88 +37,85 @@ export const useAuth = () => {
 };
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { data: session, status } = useSession();
   const [user, setUser] = useState<User | null>(null);
   const [dbUser, setDbUser] = useState<DbUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getInitialSession = async () => {
-      try {
-        // Get current session
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Session error:', error);
-          setLoading(false);
-          return;
-        }
+    const hydrateUser = async () => {
+      setLoading(true);
 
-        if (session?.user) {
-          setUser(session.user);
-          
-          // Create a basic user profile from auth data
-          const basicProfile = {
-            id: session.user.id,
-            email: session.user.email || '',
-            fullName: session.user.user_metadata?.full_name || session.user.email || '',
-            role: session.user.user_metadata?.role || 'student',
-            createdAt: new Date(session.user.created_at),
-            updatedAt: new Date(),
-          };
-          
-          setDbUser(basicProfile as any);
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getInitialSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email);
-      
-      if (session?.user) {
-        setUser(session.user);
-        
-        // Create a basic user profile from auth data  
-        const basicProfile = {
-          id: session.user.id,
-          email: session.user.email || '',
-          fullName: session.user.user_metadata?.full_name || session.user.email || '',
-          role: session.user.user_metadata?.role || 'student',
-          createdAt: new Date(session.user.created_at),
-          updatedAt: new Date(),
-        };
-        
-        setDbUser(basicProfile as any);
-      } else {
+      if (!session?.user) {
         setUser(null);
         setDbUser(null);
+        setLoading(false);
+        return;
       }
-      
-      setLoading(false);
-    });
 
-    return () => {
-      subscription?.unsubscribe();
+      const baseUser = session.user as any;
+      const id = baseUser.id as string | undefined;
+
+      if (!id) {
+        setLoading(false);
+        return;
+      }
+
+      setUser({
+        id,
+        email: baseUser.email,
+        app_metadata: {},
+        user_metadata: baseUser,
+        aud: 'authenticated',
+        created_at: baseUser.created_at || new Date().toISOString(),
+        identities: [],
+        phone: baseUser.phone || null,
+        last_sign_in_at: baseUser.last_sign_in_at || new Date().toISOString(),
+        role: baseUser.role,
+      } as unknown as User);
+
+      const appUser = (session as any)?.appUser as DbUser | null;
+
+      if (appUser) {
+        setDbUser({
+          ...appUser,
+          email: appUser.email || baseUser.email,
+          fullName: appUser.fullName || baseUser.name || baseUser.email,
+          role: appUser.role || baseUser.role || 'student',
+        } as DbUser);
+        setLoading(false);
+        return;
+      }
+
+      setDbUser({
+        id,
+        email: baseUser.email,
+        fullName: baseUser.name || baseUser.email,
+        role: baseUser.role || 'student',
+        createdAt: new Date(baseUser.created_at || Date.now()),
+        updatedAt: new Date(),
+      } as any);
+      setLoading(false);
     };
-  }, []);
+
+    hydrateUser();
+  }, [session]);
+
+  useEffect(() => {
+    if (status === 'loading') {
+      setLoading(true);
+    }
+  }, [status]);
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      setLoading(true);
+      await nextAuthSignOut({ callbackUrl: '/login' });
       setUser(null);
       setDbUser(null);
-      setLoading(false);
-      
-      // Redirect to login page
-      window.location.href = '/login';
     } catch (error) {
       console.error('Error signing out:', error);
+      setLoading(false);
     }
   };
 
@@ -134,7 +134,11 @@ const queryClient = new QueryClient({
       gcTime: 10 * 60 * 1000, // 10 minutes
       retry: (failureCount, error: any) => {
         // Don't retry on 4xx errors except 408, 429
-        if (error?.status >= 400 && error?.status < 500 && ![408, 429].includes(error.status)) {
+        if (
+          error?.status >= 400 &&
+          error?.status < 500 &&
+          ![408, 429].includes(error.status)
+        ) {
           return false;
         }
         return failureCount < 3;
@@ -158,7 +162,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         >
           <AuthProvider>
             {children}
-            <Toaster 
+            <Toaster
               position="top-right"
               toastOptions={{
                 duration: 4000,

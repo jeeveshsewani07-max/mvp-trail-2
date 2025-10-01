@@ -1,13 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Icons } from '@/components/icons';
+import { signIn } from 'next-auth/react';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { getAuthCallbackUrl } from '@/lib/utils/site-url';
@@ -16,18 +22,17 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const router = useRouter();
 
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email) {
       toast.error('Please enter your email address');
       return;
     }
 
     setIsLoading(true);
-    
+
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -49,22 +54,16 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = async () => {
+    if (isGoogleLoading) return;
     setIsGoogleLoading(true);
-    
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: getAuthCallbackUrl(),
-        },
-      });
 
-      if (error) {
-        toast.error(error.message);
-      }
+    try {
+      await signIn('google', {
+        callbackUrl: '/auth/login-handler',
+      });
     } catch (error) {
-      toast.error('An unexpected error occurred');
-    } finally {
+      console.error('Google sign-in failed', error);
+      toast.error('Failed to start Google sign-in');
       setIsGoogleLoading(false);
     }
   };
@@ -130,11 +129,7 @@ export default function LoginPage() {
                   required
                 />
               </div>
-              <Button 
-                type="submit" 
-                className="w-full"
-                disabled={isLoading}
-              >
+              <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
@@ -168,9 +163,15 @@ export default function LoginPage() {
 
         <div className="text-center mt-8">
           <div className="inline-flex items-center space-x-6 text-sm text-muted-foreground">
-            <Link href="/about" className="hover:underline">About</Link>
-            <Link href="/contact" className="hover:underline">Contact</Link>
-            <Link href="/help" className="hover:underline">Help</Link>
+            <Link href="/about" className="hover:underline">
+              About
+            </Link>
+            <Link href="/contact" className="hover:underline">
+              Contact
+            </Link>
+            <Link href="/help" className="hover:underline">
+              Help
+            </Link>
           </div>
         </div>
       </div>
