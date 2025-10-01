@@ -23,7 +23,7 @@ import {
 import { Icons } from '@/components/icons';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
-import { getAuthCallbackUrl } from '@/lib/utils/site-url';
+import { getAuthCallbackUrl, getSiteUrl } from '@/lib/utils/site-url';
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
@@ -146,8 +146,9 @@ export default function SignUpPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: getAuthCallbackUrl('/onboarding'),
+          redirectTo: `${getSiteUrl()}/auth/callback`,
           queryParams: {
+            next: '/onboarding',
             role: formData.role || 'student',
           },
         },

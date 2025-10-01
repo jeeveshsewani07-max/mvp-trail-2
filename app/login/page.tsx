@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Icons } from '@/components/icons';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
-import { getAuthCallbackUrl } from '@/lib/utils/site-url';
+import { getAuthCallbackUrl, getSiteUrl } from '@/lib/utils/site-url';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -90,7 +90,10 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: getAuthCallbackUrl(),
+          redirectTo: `${getSiteUrl()}/auth/callback`,
+          queryParams: {
+            next: '/dashboard',
+          },
         },
       });
 
