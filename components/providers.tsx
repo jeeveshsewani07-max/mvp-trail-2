@@ -67,34 +67,24 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
         app_metadata: {},
         user_metadata: baseUser,
         aud: 'authenticated',
-        created_at: baseUser.created_at || new Date().toISOString(),
+        created_at: new Date().toISOString(),
         identities: [],
         phone: baseUser.phone || null,
-        last_sign_in_at: baseUser.last_sign_in_at || new Date().toISOString(),
+        last_sign_in_at: new Date().toISOString(),
         role: baseUser.role,
       } as unknown as User);
 
-      const appUser = (session as any)?.appUser as DbUser | null;
-
-      if (appUser) {
-        setDbUser({
-          ...appUser,
-          email: appUser.email || baseUser.email,
-          fullName: appUser.fullName || baseUser.name || baseUser.email,
-          role: appUser.role || baseUser.role || 'student',
-        } as DbUser);
-        setLoading(false);
-        return;
-      }
-
+      // For Google users, create a basic dbUser object
+      // The actual database operations will happen in the onboarding flow
       setDbUser({
         id,
         email: baseUser.email,
         fullName: baseUser.name || baseUser.email,
         role: baseUser.role || 'student',
-        createdAt: new Date(baseUser.created_at || Date.now()),
+        createdAt: new Date(),
         updatedAt: new Date(),
       } as any);
+
       setLoading(false);
     };
 
