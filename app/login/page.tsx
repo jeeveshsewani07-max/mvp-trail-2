@@ -19,8 +19,10 @@ import { getAuthCallbackUrl } from '@/lib/utils/site-url';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [authMethod, setAuthMethod] = useState<'magic' | 'password'>('magic');
 
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +46,35 @@ export default function LoginPage() {
         toast.error(error.message);
       } else {
         toast.success('Check your email for the magic link!');
+      }
+    } catch (error) {
+      toast.error('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePasswordLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!email || !password) {
+      toast.error('Please enter both email and password');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('Successfully signed in!');
+        window.location.href = '/dashboard';
       }
     } catch (error) {
       toast.error('An unexpected error occurred');
@@ -110,39 +141,89 @@ export default function LoginPage() {
               Continue with Google
             </Button>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with magic link
-                </span>
-              </div>
+            {/* Authentication Method Toggle */}
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant={authMethod === 'magic' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setAuthMethod('magic')}
+                className="text-xs"
+              >
+                <Icons.mail className="mr-1 h-3 w-3" />
+                Magic Link
+              </Button>
+              <Button
+                type="button"
+                variant={authMethod === 'password' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setAuthMethod('password')}
+                className="text-xs"
+              >
+                <Icons.lock className="mr-1 h-3 w-3" />
+                Password
+              </Button>
             </div>
 
-            <form onSubmit={handleMagicLink} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="name@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Icons.mail className="mr-2 h-4 w-4" />
-                )}
-                Send Magic Link
-              </Button>
-            </form>
+            {authMethod === 'magic' ? (
+              <form onSubmit={handleMagicLink} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? (
+                    <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Icons.mail className="mr-2 h-4 w-4" />
+                  )}
+                  Send Magic Link
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handlePasswordLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? (
+                    <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Icons.lock className="mr-2 h-4 w-4" />
+                  )}
+                  Sign In
+                </Button>
+              </form>
+            )}
 
             <div className="text-center text-sm">
               <span className="text-muted-foreground">
