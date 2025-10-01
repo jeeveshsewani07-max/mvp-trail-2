@@ -26,11 +26,7 @@ export default function OnboardingPage() {
       return;
     }
 
-    // Check if this is a Google user that needs onboarding
-    // For now, we'll assume users coming to onboarding need database setup
-    // This can be refined later based on actual session structure
-
-    // Prefer role from URL if present, otherwise use dbUser role, or default to student for Google users
+    // Prefer role from URL if present, otherwise use dbUser role
     const roleParam = searchParams.get('role');
     if (roleParam) {
       setSelectedRole(roleParam);
@@ -39,8 +35,6 @@ export default function OnboardingPage() {
 
     if (dbUser?.role) {
       setSelectedRole(dbUser.role);
-    } else if (isGoogleUser) {
-      setSelectedRole('student'); // Default for Google users
     }
   }, [user, dbUser, loading, router, searchParams]);
 
@@ -71,39 +65,9 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleOnboardingComplete = async () => {
-    if (!user) return;
-
-    setIsLoading(true);
-
-    try {
-      // For Google users, we need to create the user record in Supabase
-      // The Google profile data is in the session, not user object
-      if (selectedRole) {
-        // Create user in Supabase
-        const { error } = await supabase.from('users').insert({
-          id: user.id,
-          email: user.email!,
-          full_name: user.user_metadata?.name || user.email!.split('@')[0],
-          role: selectedRole,
-          is_email_verified: true,
-        });
-
-        if (error) {
-          console.error('Failed to create user:', error);
-          // Continue anyway - user can still use the app
-        }
-      }
-
-      toast.success('Welcome to Smart Student Hub!');
-      router.push('/dashboard');
-    } catch (error) {
-      console.error('Onboarding completion error:', error);
-      toast.success('Welcome to Smart Student Hub!');
-      router.push('/dashboard');
-    } finally {
-      setIsLoading(false);
-    }
+  const handleOnboardingComplete = () => {
+    toast.success('Welcome to Smart Student Hub!');
+    router.push('/dashboard');
   };
 
   if (loading) {

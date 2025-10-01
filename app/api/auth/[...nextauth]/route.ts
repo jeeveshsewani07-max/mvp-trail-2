@@ -10,30 +10,16 @@ const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile }) {
-      // Store Google user info in session for later use in onboarding
-      (user as any).googleProfile = profile;
-      (user as any).role = 'student'; // Default role, will be updated in onboarding
-      (user as any).needsOnboarding = true; // Always redirect to onboarding for Google users
-
-      return true; // Always allow sign-in, handle logic in onboarding
-    },
     async jwt({ token, user }) {
       if (user) {
-        token.id = token.sub; // Use NextAuth's built-in sub as user ID
-        token.role = (user as any).role ?? 'student';
-        token.needsOnboarding = (user as any).needsOnboarding ?? true;
-        token.googleProfile = (user as any).googleProfile ?? null;
+        token.id = user.id;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         (session.user as any).id = token.id;
-        (session.user as any).role = token.role;
-        (session.user as any).needsOnboarding = token.needsOnboarding;
       }
-      (session as any).googleProfile = token.googleProfile || null;
       return session;
     },
   },

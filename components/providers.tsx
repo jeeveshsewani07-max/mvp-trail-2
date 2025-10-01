@@ -5,12 +5,8 @@ import { ThemeProvider } from 'next-themes';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from 'sonner';
-import {
-  SessionProvider,
-  useSession,
-  signOut as nextAuthSignOut,
-} from 'next-auth/react';
-import { User } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase/client';
+import { User, type AuthError } from '@supabase/supabase-js';
 import type { User as DbUser } from '@/types';
 
 // Auth Context
@@ -37,75 +33,95 @@ export const useAuth = () => {
 };
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { data: session, status } = useSession();
   const [user, setUser] = useState<User | null>(null);
   const [dbUser, setDbUser] = useState<DbUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const hydrateUser = async () => {
-      setLoading(true);
+    const getInitialSession = async () => {
+      try {
+        // Get current session
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
 
-      if (!session?.user) {
-        setUser(null);
-        setDbUser(null);
+        if (error) {
+          console.error('Session error:', error);
+          setLoading(false);
+          return;
+        }
+
+        if (session?.user) {
+          setUser(session.user);
+
+          // Create a basic user profile from auth data
+          const basicProfile = {
+            id: session.user.id,
+            email: session.user.email || '',
+            fullName:
+              session.user.user_metadata?.full_name || session.user.email || '',
+            role: session.user.user_metadata?.role || 'student',
+            createdAt: new Date(session.user.created_at),
+            updatedAt: new Date(),
+          };
+
+          setDbUser(basicProfile as any);
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      const baseUser = session.user as any;
-      const id = baseUser.id as string | undefined;
-
-      if (!id) {
-        setLoading(false);
-        return;
-      }
-
-      setUser({
-        id,
-        email: baseUser.email,
-        app_metadata: {},
-        user_metadata: baseUser,
-        aud: 'authenticated',
-        created_at: new Date().toISOString(),
-        identities: [],
-        phone: baseUser.phone || null,
-        last_sign_in_at: new Date().toISOString(),
-        role: baseUser.role,
-      } as unknown as User);
-
-      // For Google users, create a basic dbUser object
-      // The actual database operations will happen in the onboarding flow
-      setDbUser({
-        id,
-        email: baseUser.email,
-        fullName: baseUser.name || baseUser.email,
-        role: baseUser.role || 'student',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      } as any);
-
-      setLoading(false);
     };
 
-    hydrateUser();
-  }, [session]);
+    getInitialSession();
 
-  useEffect(() => {
-    if (status === 'loading') {
-      setLoading(true);
-    }
-  }, [status]);
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email);
+
+      if (session?.user) {
+        setUser(session.user);
+
+        // Create a basic user profile from auth data
+        const basicProfile = {
+          id: session.user.id,
+          email: session.user.email || '',
+          fullName:
+            session.user.user_metadata?.full_name || session.user.email || '',
+          role: session.user.user_metadata?.role || 'student',
+          createdAt: new Date(session.user.created_at),
+          updatedAt: new Date(),
+        };
+
+        setDbUser(basicProfile as any);
+      } else {
+        setUser(null);
+        setDbUser(null);
+      }
+
+      setLoading(false);
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []);
 
   const signOut = async () => {
     try {
-      setLoading(true);
-      await nextAuthSignOut({ callbackUrl: '/login' });
+      await supabase.auth.signOut();
       setUser(null);
       setDbUser(null);
+      setLoading(false);
+
+      // Redirect to login page
+      window.location.href = '/login';
     } catch (error) {
       console.error('Error signing out:', error);
-      setLoading(false);
     }
   };
 
@@ -142,31 +158,29 @@ const queryClient = new QueryClient({
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AuthProvider>
-            {children}
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: 'hsl(var(--background))',
-                  color: 'hsl(var(--foreground))',
-                  border: '1px solid hsl(var(--border))',
-                },
-              }}
-            />
-          </AuthProvider>
-        </ThemeProvider>
-        <ReactQueryDevtools initialIsOpen={false} />
-      </QueryClientProvider>
-    </SessionProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <AuthProvider>
+          {children}
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: 'hsl(var(--background))',
+                color: 'hsl(var(--foreground))',
+                border: '1px solid hsl(var(--border))',
+              },
+            }}
+          />
+        </AuthProvider>
+      </ThemeProvider>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
 }

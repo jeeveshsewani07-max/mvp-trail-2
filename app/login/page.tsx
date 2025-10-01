@@ -13,7 +13,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Icons } from '@/components/icons';
-import { signIn } from 'next-auth/react';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { getAuthCallbackUrl } from '@/lib/utils/site-url';
@@ -54,14 +53,22 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = async () => {
-    if (isGoogleLoading) return;
     setIsGoogleLoading(true);
 
     try {
-      await signIn('google');
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: getAuthCallbackUrl(),
+        },
+      });
+
+      if (error) {
+        toast.error(error.message);
+      }
     } catch (error) {
-      console.error('Google sign-in failed', error);
-      toast.error('Failed to start Google sign-in');
+      toast.error('An unexpected error occurred');
+    } finally {
       setIsGoogleLoading(false);
     }
   };
