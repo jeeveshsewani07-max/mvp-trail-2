@@ -1,9 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/providers';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,705 +17,920 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase/client';
 
-// Mock profile data - would come from database
-const mockProfileData = {
-  personalInfo: {
-    fullName: 'John Doe',
-    email: 'john.doe@university.edu',
-    phone: '+1 (555) 123-4567',
-    dateOfBirth: '1999-05-15',
-    bio: 'Computer Science student passionate about AI and web development. Always eager to learn new technologies and work on innovative projects.',
-    location: 'San Francisco, CA',
-    website: 'https://johndoe.dev',
-    linkedin: 'https://linkedin.com/in/johndoe',
-    github: 'https://github.com/johndoe',
-  },
-  academic: {
-    institution: 'University of Technology',
-    department: 'Computer Science',
-    year: '3rd Year',
-    gpa: '3.85',
-    expectedGraduation: '2025-05-15',
-    studentId: 'CS2022001',
-  },
-  professional: {
-    currentPosition: 'Software Engineering Intern',
-    company: 'TechCorp Inc.',
-    experience: [
-      {
-        title: 'Frontend Developer Intern',
-        company: 'StartupXYZ',
-        duration: 'Jun 2023 - Aug 2023',
-        description: 'Developed responsive web applications using React and TypeScript.',
-      },
-      {
-        title: 'Teaching Assistant',
-        company: 'University of Technology',
-        duration: 'Jan 2023 - May 2023',
-        description: 'Assisted in Data Structures and Algorithms course for 50+ students.',
-      },
-    ],
-  },
-  skills: {
-    technical: ['JavaScript', 'TypeScript', 'React', 'Node.js', 'Python', 'Java', 'SQL', 'MongoDB'],
-    soft: ['Leadership', 'Communication', 'Problem Solving', 'Team Collaboration', 'Project Management'],
-    languages: ['English (Native)', 'Spanish (Intermediate)', 'French (Beginner)'],
-  },
-  preferences: {
-    profileVisibility: 'public',
-    showEmail: false,
-    showPhone: false,
-    allowRecruiterContact: true,
-    emailNotifications: true,
-    achievementNotifications: true,
-  },
+// Role selection component for onboarding
+const RoleSelection = ({
+  onRoleSelect,
+  selectedRole,
+}: {
+  onRoleSelect: (role: string) => void;
+  selectedRole: string;
+}) => {
+  const roles = [
+    {
+      id: 'student',
+      title: 'Student',
+      description:
+        'Build your verified digital portfolio, discover opportunities, and track your achievements.',
+      icon: Icons.graduationCap,
+    },
+    {
+      id: 'faculty',
+      title: 'Faculty / Mentor',
+      description:
+        'Guide students, approve achievements, and create impactful events.',
+      icon: Icons.user,
+    },
+    {
+      id: 'recruiter',
+      title: 'Recruiter',
+      description: 'Find top talent with verified skills and achievements.',
+      icon: Icons.briefcase,
+    },
+    {
+      id: 'institution_admin',
+      title: 'Institution Admin',
+      description:
+        "Manage your institution's presence and get comprehensive analytics.",
+      icon: Icons.building,
+    },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+      {roles.map((role) => {
+        const IconComponent = role.icon;
+        return (
+          <Card
+            key={role.id}
+            className={`glass-card card-hover cursor-pointer relative overflow-hidden group ${
+              selectedRole === role.id ? 'ring-2 ring-primary' : ''
+            }`}
+            onClick={() => onRoleSelect(role.id)}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+            <CardHeader className="relative">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <IconComponent className="h-6 w-6 text-primary" />
+              </div>
+              <CardTitle className="text-xl">{role.title}</CardTitle>
+              <CardDescription className="text-base">
+                {role.description}
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        );
+      })}
+    </div>
+  );
 };
 
-export default function ProfilePage() {
-  const { dbUser } = useAuth();
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [profileData, setProfileData] = useState(mockProfileData);
+// Student onboarding form
+const StudentOnboardingForm = ({
+  onComplete,
+  user,
+}: {
+  onComplete: () => void;
+  user: any;
+}) => {
+  const [formData, setFormData] = useState({
+    institution: '',
+    department: '',
+    rollNumber: '',
+    batch: '',
+    course: '',
+    currentYear: 1,
+    currentSemester: 1,
+    skills: [] as string[],
+    interests: [] as string[],
+    languages: ['English'] as string[],
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSave = async () => {
-    setIsSaving(true);
+  const skillOptions = [
+    'JavaScript',
+    'TypeScript',
+    'React',
+    'Node.js',
+    'Python',
+    'Java',
+    'C++',
+    'C#',
+    'HTML',
+    'CSS',
+    'SQL',
+    'MongoDB',
+    'PostgreSQL',
+    'AWS',
+    'Docker',
+    'Git',
+  ];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast.success('Profile updated successfully!');
-      setIsEditing(false);
-    } catch (error) {
-      toast.error('Failed to update profile');
+      // Create student profile
+      const { error } = await supabase.from('profiles').insert({
+        user_id: user.id,
+        institution_id: formData.institution,
+        roll_number: formData.rollNumber,
+        batch: formData.batch,
+        course: formData.course,
+        current_year: formData.currentYear,
+        current_semester: formData.currentSemester,
+        skills: formData.skills,
+        interests: formData.interests,
+        languages: formData.languages,
+        is_profile_complete: true,
+      });
+
+      if (error) throw error;
+
+      toast.success('Profile completed successfully!');
+      onComplete();
+    } catch (error: any) {
+      toast.error('Failed to save profile: ' + error.message);
     } finally {
-      setIsSaving(false);
+      setIsLoading(false);
     }
-  };
-
-  const handleInputChange = (section: string, field: string, value: string) => {
-    setProfileData(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section as keyof typeof prev],
-        [field]: value,
-      },
-    }));
-  };
-
-  const addSkill = (category: 'technical' | 'soft' | 'languages', skill: string) => {
-    if (skill.trim()) {
-      setProfileData(prev => ({
-        ...prev,
-        skills: {
-          ...prev.skills,
-          [category]: [...prev.skills[category], skill.trim()],
-        },
-      }));
-    }
-  };
-
-  const removeSkill = (category: 'technical' | 'soft' | 'languages', index: number) => {
-    setProfileData(prev => ({
-      ...prev,
-      skills: {
-        ...prev.skills,
-        [category]: prev.skills[category].filter((_, i) => i !== index),
-      },
-    }));
   };
 
   return (
-    <DashboardLayout>
-      <div className="space-y-8 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Profile Settings</h1>
-          <p className="text-muted-foreground">
-            Manage your personal information and preferences
-          </p>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="institution">Institution</Label>
+          <Input
+            id="institution"
+            placeholder="e.g., IIT Delhi"
+            value={formData.institution}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, institution: e.target.value }))
+            }
+            required
+          />
         </div>
-        <div className="flex gap-2">
-          {isEditing ? (
-            <>
-              <Button variant="outline" onClick={() => setIsEditing(false)} disabled={isSaving}>
-                Cancel
-              </Button>
-              <Button onClick={handleSave} disabled={isSaving}>
-                {isSaving ? (
-                  <>
-                    <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Icons.check className="mr-2 h-4 w-4" />
-                    Save Changes
-                  </>
-                )}
-              </Button>
-            </>
-          ) : (
-            <Button onClick={() => setIsEditing(true)}>
-              <Icons.edit className="mr-2 h-4 w-4" />
-              Edit Profile
-            </Button>
-          )}
+        <div className="space-y-2">
+          <Label htmlFor="department">Department</Label>
+          <Input
+            id="department"
+            placeholder="e.g., Computer Science"
+            value={formData.department}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, department: e.target.value }))
+            }
+            required
+          />
         </div>
       </div>
 
-      <Tabs defaultValue="personal" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="personal">Personal</TabsTrigger>
-          <TabsTrigger value="academic">Academic</TabsTrigger>
-          <TabsTrigger value="professional">Professional</TabsTrigger>
-          <TabsTrigger value="skills">Skills</TabsTrigger>
-          <TabsTrigger value="privacy">Privacy</TabsTrigger>
-        </TabsList>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="rollNumber">Roll Number</Label>
+          <Input
+            id="rollNumber"
+            placeholder="e.g., CS2022001"
+            value={formData.rollNumber}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, rollNumber: e.target.value }))
+            }
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="batch">Batch</Label>
+          <Input
+            id="batch"
+            placeholder="e.g., 2021-2025"
+            value={formData.batch}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, batch: e.target.value }))
+            }
+            required
+          />
+        </div>
+      </div>
 
-        <TabsContent value="personal" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-              <CardDescription>
-                Your basic personal details and contact information
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name</Label>
-                  <Input
-                    id="fullName"
-                    value={profileData.personalInfo.fullName}
-                    onChange={(e) => handleInputChange('personalInfo', 'fullName', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={profileData.personalInfo.email}
-                    onChange={(e) => handleInputChange('personalInfo', 'email', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    value={profileData.personalInfo.phone}
-                    onChange={(e) => handleInputChange('personalInfo', 'phone', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                  <Input
-                    id="dateOfBirth"
-                    type="date"
-                    value={profileData.personalInfo.dateOfBirth}
-                    onChange={(e) => handleInputChange('personalInfo', 'dateOfBirth', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
-                  <Input
-                    id="location"
-                    value={profileData.personalInfo.location}
-                    onChange={(e) => handleInputChange('personalInfo', 'location', e.target.value)}
-                    disabled={!isEditing}
-                    placeholder="City, State/Country"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="website">Website</Label>
-                  <Input
-                    id="website"
-                    value={profileData.personalInfo.website}
-                    onChange={(e) => handleInputChange('personalInfo', 'website', e.target.value)}
-                    disabled={!isEditing}
-                    placeholder="https://your-website.com"
-                  />
-                </div>
-              </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="course">Course</Label>
+          <Input
+            id="course"
+            placeholder="e.g., B.Tech"
+            value={formData.course}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, course: e.target.value }))
+            }
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="currentYear">Current Year</Label>
+          <Select
+            value={formData.currentYear.toString()}
+            onValueChange={(value) =>
+              setFormData((prev) => ({ ...prev, currentYear: parseInt(value) }))
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[1, 2, 3, 4, 5, 6].map((year) => (
+                <SelectItem key={year} value={year.toString()}>
+                  Year {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="currentSemester">Current Semester</Label>
+          <Select
+            value={formData.currentSemester.toString()}
+            onValueChange={(value) =>
+              setFormData((prev) => ({
+                ...prev,
+                currentSemester: parseInt(value),
+              }))
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                <SelectItem key={sem} value={sem.toString()}>
+                  Semester {sem}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  value={profileData.personalInfo.bio}
-                  onChange={(e) => handleInputChange('personalInfo', 'bio', e.target.value)}
-                  disabled={!isEditing}
-                  placeholder="Tell us about yourself..."
-                  className="min-h-[100px]"
-                />
-              </div>
+      <Button type="submit" className="w-full" disabled={isLoading}>
+        {isLoading ? (
+          <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Icons.check className="mr-2 h-4 w-4" />
+        )}
+        Complete Profile
+      </Button>
+    </form>
+  );
+};
 
-              <Separator />
+// Faculty onboarding form
+const FacultyOnboardingForm = ({
+  onComplete,
+  user,
+}: {
+  onComplete: () => void;
+  user: any;
+}) => {
+  const [formData, setFormData] = useState({
+    institution: '',
+    department: '',
+    designation: '',
+    specialization: '',
+    qualifications: [] as string[],
+    experience: 0,
+    researchAreas: [] as string[],
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Social Links</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="linkedin">LinkedIn</Label>
-                    <div className="flex">
-                      <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md">
-                        <Icons.linkedin className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <Input
-                        id="linkedin"
-                        value={profileData.personalInfo.linkedin}
-                        onChange={(e) => handleInputChange('personalInfo', 'linkedin', e.target.value)}
-                        disabled={!isEditing}
-                        placeholder="https://linkedin.com/in/username"
-                        className="rounded-l-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="github">GitHub</Label>
-                    <div className="flex">
-                      <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md">
-                        <Icons.github className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <Input
-                        id="github"
-                        value={profileData.personalInfo.github}
-                        onChange={(e) => handleInputChange('personalInfo', 'github', e.target.value)}
-                        disabled={!isEditing}
-                        placeholder="https://github.com/username"
-                        className="rounded-l-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+  const qualificationOptions = [
+    'PhD',
+    'M.Tech',
+    'M.Sc',
+    'ME',
+    'MBA',
+    'B.Tech',
+    'B.Sc',
+    'BE',
+  ];
+  const researchAreaOptions = [
+    'Artificial Intelligence',
+    'Machine Learning',
+    'Data Science',
+    'Computer Networks',
+    'Cybersecurity',
+    'Software Engineering',
+    'Database Systems',
+    'Cloud Computing',
+  ];
 
-        <TabsContent value="academic" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Academic Information</CardTitle>
-              <CardDescription>
-                Your educational background and current academic status
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="institution">Institution</Label>
-                  <Input
-                    id="institution"
-                    value={profileData.academic.institution}
-                    onChange={(e) => handleInputChange('academic', 'institution', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="department">Department/Major</Label>
-                  <Input
-                    id="department"
-                    value={profileData.academic.department}
-                    onChange={(e) => handleInputChange('academic', 'department', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="year">Academic Year</Label>
-                  <Input
-                    id="year"
-                    value={profileData.academic.year}
-                    onChange={(e) => handleInputChange('academic', 'year', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="gpa">GPA</Label>
-                  <Input
-                    id="gpa"
-                    value={profileData.academic.gpa}
-                    onChange={(e) => handleInputChange('academic', 'gpa', e.target.value)}
-                    disabled={!isEditing}
-                    placeholder="3.85"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="studentId">Student ID</Label>
-                  <Input
-                    id="studentId"
-                    value={profileData.academic.studentId}
-                    onChange={(e) => handleInputChange('academic', 'studentId', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="expectedGraduation">Expected Graduation</Label>
-                  <Input
-                    id="expectedGraduation"
-                    type="date"
-                    value={profileData.academic.expectedGraduation}
-                    onChange={(e) => handleInputChange('academic', 'expectedGraduation', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
 
-        <TabsContent value="professional" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Professional Experience</CardTitle>
-              <CardDescription>
-                Your work experience and current professional status
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="currentPosition">Current Position</Label>
-                  <Input
-                    id="currentPosition"
-                    value={profileData.professional.currentPosition}
-                    onChange={(e) => handleInputChange('professional', 'currentPosition', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="company">Company</Label>
-                  <Input
-                    id="company"
-                    value={profileData.professional.company}
-                    onChange={(e) => handleInputChange('professional', 'company', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </div>
-              </div>
+    try {
+      // Create faculty profile
+      const { error } = await supabase.from('faculty_profiles').insert({
+        user_id: user.id,
+        institution_id: formData.institution,
+        department_id: formData.department,
+        designation: formData.designation,
+        specialization: formData.specialization,
+        qualifications: formData.qualifications,
+        experience: formData.experience,
+        research_areas: formData.researchAreas,
+      });
 
-              <Separator />
+      if (error) throw error;
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Work Experience</h3>
-                  {isEditing && (
-                    <Button variant="outline" size="sm">
-                      <Icons.plus className="h-4 w-4 mr-2" />
-                      Add Experience
-                    </Button>
-                  )}
-                </div>
+      toast.success('Profile completed successfully!');
+      onComplete();
+    } catch (error: any) {
+      toast.error('Failed to save profile: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-                <div className="space-y-4">
-                  {profileData.professional.experience.map((exp, index) => (
-                    <Card key={index}>
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <h4 className="font-medium">{exp.title}</h4>
-                            <p className="text-sm text-muted-foreground">{exp.company}</p>
-                            <p className="text-sm text-muted-foreground">{exp.duration}</p>
-                            <p className="text-sm">{exp.description}</p>
-                          </div>
-                          {isEditing && (
-                            <div className="flex gap-2">
-                              <Button variant="ghost" size="sm">
-                                <Icons.edit className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm">
-                                <Icons.trash className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="institution">Institution</Label>
+          <Input
+            id="institution"
+            placeholder="e.g., IIT Delhi"
+            value={formData.institution}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, institution: e.target.value }))
+            }
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="department">Department</Label>
+          <Input
+            id="department"
+            placeholder="e.g., Computer Science"
+            value={formData.department}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, department: e.target.value }))
+            }
+            required
+          />
+        </div>
+      </div>
 
-        <TabsContent value="skills" className="space-y-6">
-          <div className="grid gap-6">
-            {/* Technical Skills */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Icons.code className="h-5 w-5" />
-                  Technical Skills
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {profileData.skills.technical.map((skill, index) => (
-                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                      {skill}
-                      {isEditing && (
-                        <button
-                          onClick={() => removeSkill('technical', index)}
-                          className="ml-1 hover:text-destructive"
-                        >
-                          <Icons.x className="h-3 w-3" />
-                        </button>
-                      )}
-                    </Badge>
-                  ))}
-                </div>
-                {isEditing && (
-                  <div className="flex gap-2">
-                    <Input placeholder="Add a technical skill..." id="new-technical-skill" />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const input = document.getElementById('new-technical-skill') as HTMLInputElement;
-                        if (input.value) {
-                          addSkill('technical', input.value);
-                          input.value = '';
-                        }
-                      }}
-                    >
-                      Add
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="designation">Designation</Label>
+          <Input
+            id="designation"
+            placeholder="e.g., Assistant Professor"
+            value={formData.designation}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, designation: e.target.value }))
+            }
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="experience">Years of Experience</Label>
+          <Select
+            value={formData.experience.toString()}
+            onValueChange={(value) =>
+              setFormData((prev) => ({ ...prev, experience: parseInt(value) }))
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: 31 }, (_, i) => (
+                <SelectItem key={i} value={i.toString()}>
+                  {i} {i === 1 ? 'year' : 'years'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-            {/* Soft Skills */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Icons.users className="h-5 w-5" />
-                  Soft Skills
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {profileData.skills.soft.map((skill, index) => (
-                    <Badge key={index} variant="outline" className="flex items-center gap-1">
-                      {skill}
-                      {isEditing && (
-                        <button
-                          onClick={() => removeSkill('soft', index)}
-                          className="ml-1 hover:text-destructive"
-                        >
-                          <Icons.x className="h-3 w-3" />
-                        </button>
-                      )}
-                    </Badge>
-                  ))}
-                </div>
-                {isEditing && (
-                  <div className="flex gap-2">
-                    <Input placeholder="Add a soft skill..." id="new-soft-skill" />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const input = document.getElementById('new-soft-skill') as HTMLInputElement;
-                        if (input.value) {
-                          addSkill('soft', input.value);
-                          input.value = '';
-                        }
-                      }}
-                    >
-                      Add
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+      <div className="space-y-2">
+        <Label htmlFor="specialization">Specialization</Label>
+        <Input
+          id="specialization"
+          placeholder="e.g., Machine Learning, AI"
+          value={formData.specialization}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, specialization: e.target.value }))
+          }
+        />
+      </div>
 
-            {/* Languages */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Icons.globe className="h-5 w-5" />
-                  Languages
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {profileData.skills.languages.map((language, index) => (
-                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                      {language}
-                      {isEditing && (
-                        <button
-                          onClick={() => removeSkill('languages', index)}
-                          className="ml-1 hover:text-destructive"
-                        >
-                          <Icons.x className="h-3 w-3" />
-                        </button>
-                      )}
-                    </Badge>
-                  ))}
-                </div>
-                {isEditing && (
-                  <div className="flex gap-2">
-                    <Input placeholder="Add a language..." id="new-language" />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const input = document.getElementById('new-language') as HTMLInputElement;
-                        if (input.value) {
-                          addSkill('languages', input.value);
-                          input.value = '';
-                        }
-                      }}
-                    >
-                      Add
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+      <Button type="submit" className="w-full" disabled={isLoading}>
+        {isLoading ? (
+          <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Icons.check className="mr-2 h-4 w-4" />
+        )}
+        Complete Profile
+      </Button>
+    </form>
+  );
+};
+
+// Recruiter onboarding form
+const RecruiterOnboardingForm = ({
+  onComplete,
+  user,
+}: {
+  onComplete: () => void;
+  user: any;
+}) => {
+  const [formData, setFormData] = useState({
+    companyName: '',
+    designation: '',
+    companyWebsite: '',
+    industry: '',
+    companySize: '',
+  });
+  const [isLoading, setIsLoading] = useState(false);
+
+  const industries = [
+    'Technology',
+    'Healthcare',
+    'Finance',
+    'Education',
+    'Retail',
+    'Manufacturing',
+    'Consulting',
+    'Media & Entertainment',
+  ];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      // Create recruiter profile
+      const { error } = await supabase.from('recruiter_profiles').insert({
+        profile_id: user.id,
+        company_name: formData.companyName,
+        designation: formData.designation,
+        company_website: formData.companyWebsite || null,
+        industry: formData.industry,
+        company_size: formData.companySize || null,
+      });
+
+      if (error) throw error;
+
+      toast.success('Profile completed successfully!');
+      onComplete();
+    } catch (error: any) {
+      toast.error('Failed to save profile: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Company Information</h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="companyName">Company Name</Label>
+            <Input
+              id="companyName"
+              placeholder="Enter your company name"
+              value={formData.companyName}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  companyName: e.target.value,
+                }))
+              }
+              required
+            />
           </div>
-        </TabsContent>
+          <div className="space-y-2">
+            <Label htmlFor="companyWebsite">Company Website</Label>
+            <Input
+              id="companyWebsite"
+              type="url"
+              placeholder="https://company.com"
+              value={formData.companyWebsite}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  companyWebsite: e.target.value,
+                }))
+              }
+            />
+          </div>
+        </div>
 
-        <TabsContent value="privacy" className="space-y-6">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="industry">Industry</Label>
+            <Select
+              value={formData.industry}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, industry: value }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select industry" />
+              </SelectTrigger>
+              <SelectContent>
+                {industries.map((industry) => (
+                  <SelectItem key={industry} value={industry}>
+                    {industry}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="companySize">Company Size</Label>
+            <Select
+              value={formData.companySize}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, companySize: value }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select company size" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1-10">1-10 employees</SelectItem>
+                <SelectItem value="11-50">11-50 employees</SelectItem>
+                <SelectItem value="51-200">51-200 employees</SelectItem>
+                <SelectItem value="201-1000">201-1000 employees</SelectItem>
+                <SelectItem value="1000+">1000+ employees</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="designation">Your Designation</Label>
+          <Input
+            id="designation"
+            placeholder="e.g., HR Manager, Talent Acquisition"
+            value={formData.designation}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, designation: e.target.value }))
+            }
+            required
+          />
+        </div>
+      </div>
+
+      <Button type="submit" className="w-full" disabled={isLoading}>
+        {isLoading ? (
+          <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Icons.check className="mr-2 h-4 w-4" />
+        )}
+        Complete Profile
+      </Button>
+    </form>
+  );
+};
+
+// Institution admin onboarding form
+const InstitutionOnboardingForm = ({
+  onComplete,
+  user,
+}: {
+  onComplete: () => void;
+  user: any;
+}) => {
+  const [formData, setFormData] = useState({
+    institutionName: '',
+    institutionCode: '',
+    type: '',
+    website: '',
+  });
+  const [isLoading, setIsLoading] = useState(false);
+
+  const institutionTypes = [
+    'University',
+    'College',
+    'Institute',
+    'Technical College',
+  ];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      // Create institution
+      const { error } = await supabase.from('institutions').insert({
+        name: formData.institutionName,
+        code: formData.institutionCode,
+        type: formData.type,
+        website: formData.website || null,
+      });
+
+      if (error) throw error;
+
+      toast.success('Institution profile completed successfully!');
+      onComplete();
+    } catch (error: any) {
+      toast.error('Failed to save profile: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Institution Information</h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="institutionName">Institution Name</Label>
+            <Input
+              id="institutionName"
+              placeholder="Enter institution name"
+              value={formData.institutionName}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  institutionName: e.target.value,
+                }))
+              }
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="institutionCode">Institution Code</Label>
+            <Input
+              id="institutionCode"
+              placeholder="e.g., IIT001"
+              value={formData.institutionCode}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  institutionCode: e.target.value,
+                }))
+              }
+              required
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="type">Institution Type</Label>
+            <Select
+              value={formData.type}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, type: value }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                {institutionTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="website">Website</Label>
+            <Input
+              id="website"
+              type="url"
+              placeholder="https://institution.edu"
+              value={formData.website}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, website: e.target.value }))
+              }
+            />
+          </div>
+        </div>
+      </div>
+
+      <Button type="submit" className="w-full" disabled={isLoading}>
+        {isLoading ? (
+          <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Icons.check className="mr-2 h-4 w-4" />
+        )}
+        Complete Profile
+      </Button>
+    </form>
+  );
+};
+
+export default function ProfilePage() {
+  const { user, dbUser } = useAuth();
+  const [selectedRole, setSelectedRole] = useState<string>('');
+  const [isOnboarding, setIsOnboarding] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Check if user needs onboarding (new user or incomplete profile)
+    if (user && dbUser) {
+      // For now, assume new users need onboarding
+      // In a real app, you'd check if they have completed their profile
+      setIsOnboarding(true);
+    }
+  }, [user, dbUser]);
+
+  const handleRoleSelect = async (role: string) => {
+    if (!user) return;
+
+    setIsLoading(true);
+
+    try {
+      // Update user role in auth metadata
+      const { error } = await supabase.auth.updateUser({
+        data: { role },
+      });
+
+      if (error) {
+        console.error('Failed to update role:', error.message);
+      }
+
+      setSelectedRole(role);
+      toast.success('Role selected! Please complete your profile.');
+    } catch (error: any) {
+      toast.error('Failed to save role: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOnboardingComplete = () => {
+    setIsOnboarding(false);
+    toast.success('Profile completed successfully!');
+  };
+
+  if (isOnboarding && !selectedRole) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-8 max-w-4xl mx-auto">
+          <div className="text-center mb-8 pt-12">
+            <div className="mx-auto w-16 h-16 bg-primary rounded-lg flex items-center justify-center mb-6">
+              <Icons.graduationCap className="h-8 w-8 text-primary-foreground" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              Welcome to Smart Student Hub!
+            </h1>
+            <p className="text-xl text-gray-600 dark:text-gray-300">
+              Let's set up your account
+            </p>
+          </div>
+
+          <RoleSelection
+            onRoleSelect={handleRoleSelect}
+            selectedRole={selectedRole}
+          />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (isOnboarding && selectedRole) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-8 max-w-4xl mx-auto">
+          <div className="text-center mb-8 pt-8">
+            <div className="mx-auto w-12 h-12 bg-primary rounded-lg flex items-center justify-center mb-4">
+              <Icons.graduationCap className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Complete Your Profile
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300">
+              Help us personalize your experience
+            </p>
+          </div>
+
+          <Card className="glass-card">
             <CardHeader>
-              <CardTitle>Privacy & Preferences</CardTitle>
-              <CardDescription>
-                Control your privacy settings and notification preferences
-              </CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                {selectedRole === 'student' && (
+                  <Icons.graduationCap className="h-5 w-5" />
+                )}
+                {selectedRole === 'faculty' && (
+                  <Icons.user className="h-5 w-5" />
+                )}
+                {selectedRole === 'recruiter' && (
+                  <Icons.briefcase className="h-5 w-5" />
+                )}
+                {selectedRole === 'institution_admin' && (
+                  <Icons.building className="h-5 w-5" />
+                )}
+                {selectedRole === 'student' && 'Student Profile'}
+                {selectedRole === 'faculty' && 'Faculty Profile'}
+                {selectedRole === 'recruiter' && 'Recruiter Profile'}
+                {selectedRole === 'institution_admin' && 'Institution Profile'}
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Profile Visibility</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Profile Visibility</p>
-                      <p className="text-sm text-muted-foreground">Control who can see your profile</p>
-                    </div>
-                    <select 
-                      className="px-3 py-2 border rounded-md"
-                      value={profileData.preferences.profileVisibility}
-                      onChange={(e) => handleInputChange('preferences', 'profileVisibility', e.target.value)}
-                      disabled={!isEditing}
-                    >
-                      <option value="public">Public</option>
-                      <option value="university">University Only</option>
-                      <option value="private">Private</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Show Email</p>
-                      <p className="text-sm text-muted-foreground">Display email on public profile</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={profileData.preferences.showEmail}
-                      onChange={(e) => handleInputChange('preferences', 'showEmail', e.target.checked.toString())}
-                      disabled={!isEditing}
-                      className="w-4 h-4"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Show Phone</p>
-                      <p className="text-sm text-muted-foreground">Display phone number on profile</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={profileData.preferences.showPhone}
-                      onChange={(e) => handleInputChange('preferences', 'showPhone', e.target.checked.toString())}
-                      disabled={!isEditing}
-                      className="w-4 h-4"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Allow Recruiter Contact</p>
-                      <p className="text-sm text-muted-foreground">Let recruiters contact you directly</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={profileData.preferences.allowRecruiterContact}
-                      onChange={(e) => handleInputChange('preferences', 'allowRecruiterContact', e.target.checked.toString())}
-                      disabled={!isEditing}
-                      className="w-4 h-4"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Notifications</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Email Notifications</p>
-                      <p className="text-sm text-muted-foreground">Receive notifications via email</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={profileData.preferences.emailNotifications}
-                      onChange={(e) => handleInputChange('preferences', 'emailNotifications', e.target.checked.toString())}
-                      disabled={!isEditing}
-                      className="w-4 h-4"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Achievement Notifications</p>
-                      <p className="text-sm text-muted-foreground">Get notified about badge and achievement updates</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={profileData.preferences.achievementNotifications}
-                      onChange={(e) => handleInputChange('preferences', 'achievementNotifications', e.target.checked.toString())}
-                      disabled={!isEditing}
-                      className="w-4 h-4"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Account Actions</h3>
-                <div className="flex gap-4">
-                  <Button variant="outline">
-                    <Icons.download className="h-4 w-4 mr-2" />
-                    Export Data
-                  </Button>
-                  <Button variant="outline">
-                    <Icons.refresh className="h-4 w-4 mr-2" />
-                    Reset Profile
-                  </Button>
-                  <Button variant="destructive">
-                    <Icons.trash className="h-4 w-4 mr-2" />
-                    Delete Account
-                  </Button>
-                </div>
-              </div>
+            <CardContent>
+              {selectedRole === 'student' && (
+                <StudentOnboardingForm
+                  user={user}
+                  onComplete={handleOnboardingComplete}
+                />
+              )}
+              {selectedRole === 'faculty' && (
+                <FacultyOnboardingForm
+                  user={user}
+                  onComplete={handleOnboardingComplete}
+                />
+              )}
+              {selectedRole === 'recruiter' && (
+                <RecruiterOnboardingForm
+                  user={user}
+                  onComplete={handleOnboardingComplete}
+                />
+              )}
+              {selectedRole === 'institution_admin' && (
+                <InstitutionOnboardingForm
+                  user={user}
+                  onComplete={handleOnboardingComplete}
+                />
+              )}
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Regular profile management for existing users
+  return (
+    <DashboardLayout>
+      <div className="space-y-8 max-w-4xl mx-auto">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Profile Settings</h1>
+            <p className="text-muted-foreground">
+              Manage your personal information and preferences
+            </p>
+          </div>
+          <Button variant="outline" onClick={() => setIsOnboarding(true)}>
+            <Icons.edit className="mr-2 h-4 w-4" />
+            Edit Profile
+          </Button>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile Information</CardTitle>
+            <CardDescription>
+              Your profile is complete. You can edit it anytime.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Name</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {dbUser?.fullName || 'Not set'}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Email</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {dbUser?.email || 'Not set'}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Role</Label>
+                  <p className="text-sm text-muted-foreground capitalize">
+                    {dbUser?.role?.replace('_', ' ') || 'Not set'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );

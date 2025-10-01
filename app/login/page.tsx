@@ -92,7 +92,7 @@ export default function LoginPage() {
         options: {
           redirectTo: `${getSiteUrl()}/auth/callback`,
           queryParams: {
-            next: '/dashboard',
+            next: '/profile',
           },
         },
       });
