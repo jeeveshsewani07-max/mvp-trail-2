@@ -1,10 +1,13 @@
 import { render, screen } from '@testing-library/react';
+import { vi } from 'vitest';
 import { Button } from '@/components/ui/button';
 
 describe('Button Component', () => {
   it('renders button with text', () => {
     render(<Button>Click me</Button>);
-    expect(screen.getByRole('button', { name: /click me/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /click me/i })
+    ).toBeInTheDocument();
   });
 
   it('renders button with correct variant classes', () => {
@@ -17,16 +20,19 @@ describe('Button Component', () => {
     render(<Button disabled>Disabled</Button>);
     const button = screen.getByRole('button', { name: /disabled/i });
     expect(button).toBeDisabled();
-    expect(button).toHaveClass('disabled:pointer-events-none', 'disabled:opacity-50');
+    expect(button).toHaveClass(
+      'disabled:pointer-events-none',
+      'disabled:opacity-50'
+    );
   });
 
   it('handles click events', () => {
-    const handleClick = jest.fn();
+    const handleClick = vi.fn();
     render(<Button onClick={handleClick}>Click me</Button>);
-    
+
     const button = screen.getByRole('button', { name: /click me/i });
     button.click();
-    
+
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
 
@@ -36,10 +42,9 @@ describe('Button Component', () => {
         <a href="/test">Link Button</a>
       </Button>
     );
-    
+
     const link = screen.getByRole('link', { name: /link button/i });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute('href', '/test');
   });
 });
-
