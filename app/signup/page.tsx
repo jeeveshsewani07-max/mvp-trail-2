@@ -64,7 +64,7 @@ export default function SignUpPage() {
               full_name: formData.fullName,
               role: formData.role,
             },
-            emailRedirectTo: getAuthCallbackUrl(),
+            emailRedirectTo: `${getSiteUrl()}/dashboard`,
           },
         });
 
@@ -130,8 +130,8 @@ export default function SignUpPage() {
         toast.success('Please check your email to confirm your account!');
       } else {
         toast.success('Account created successfully!');
-        // Redirect to auth callback for role-based redirection
-        router.push('/auth/callback');
+        // Redirect to dashboard for role-based redirection
+        router.push('/dashboard');
       }
     } catch (error) {
       toast.error('An unexpected error occurred');
@@ -147,7 +147,7 @@ export default function SignUpPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${getSiteUrl()}/auth/callback`,
+          redirectTo: `${getSiteUrl()}/dashboard`,
           queryParams: {
             role: formData.role || 'student',
           },

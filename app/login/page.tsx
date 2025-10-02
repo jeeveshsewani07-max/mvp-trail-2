@@ -38,7 +38,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: getAuthCallbackUrl(),
+          emailRedirectTo: `${getSiteUrl()}/dashboard`,
         },
       });
 
@@ -74,12 +74,12 @@ export default function LoginPage() {
         toast.error(error.message);
       } else {
         toast.success('Successfully signed in!');
-        console.log('Login successful, redirecting to auth callback...');
+        console.log('Login successful, redirecting to dashboard...');
 
         // Add a small delay to ensure session is established
         setTimeout(() => {
-          console.log('Redirecting to /auth/callback');
-          window.location.href = '/auth/callback';
+          console.log('Redirecting to /dashboard');
+          window.location.href = '/dashboard';
         }, 1000);
       }
     } catch (error) {
@@ -96,7 +96,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${getSiteUrl()}/auth/callback`,
+          redirectTo: `${getSiteUrl()}/dashboard`,
         },
       });
 

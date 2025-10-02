@@ -12,6 +12,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const handleRedirect = async () => {
+      console.log('Dashboard page - Auth loading:', loading);
+      console.log('Dashboard page - User:', user);
+      console.log('Dashboard page - DBUser:', dbUser);
+
       if (loading) {
         console.log('Auth still loading...');
         return;
