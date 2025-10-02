@@ -42,13 +42,32 @@ interface Job {
   }[];
 }
 
+const JOB_TYPES = [
+  { value: 'all', label: 'All Types' },
+  { value: 'full-time', label: 'Full Time' },
+  { value: 'part-time', label: 'Part Time' },
+  { value: 'internship', label: 'Internship' },
+  { value: 'contract', label: 'Contract' },
+];
+
+const JOB_CATEGORIES = [
+  { value: 'all', label: 'All Categories' },
+  { value: 'software', label: 'Software Development' },
+  { value: 'data', label: 'Data Science' },
+  { value: 'design', label: 'Design' },
+  { value: 'marketing', label: 'Marketing' },
+  { value: 'sales', label: 'Sales' },
+  { value: 'finance', label: 'Finance' },
+  { value: 'hr', label: 'HR' },
+];
+
 export default function JobsPage() {
   const { user } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
-    type: 'all',
-    category: 'all',
+    type: JOB_TYPES[0].value,
+    category: JOB_CATEGORIES[0].value,
     location: '',
   });
 
@@ -69,16 +88,18 @@ export default function JobsPage() {
         }
 
         const response = await fetch('/api/jobs?' + params.toString());
-        if (response.ok) {
-          const data = await response.json();
-          setJobs(data.jobs || []);
-        } else {
+        if (!response.ok) {
           const error = await response.json();
-          toast.error(error.error || 'Failed to fetch jobs');
+          throw new Error(error.error || 'Failed to fetch jobs');
         }
+
+        const data = await response.json();
+        setJobs(data.jobs || []);
       } catch (error) {
         console.error('Error fetching jobs:', error);
-        toast.error('Failed to fetch jobs');
+        toast.error(
+          error instanceof Error ? error.message : 'Failed to fetch jobs'
+        );
       } finally {
         setLoading(false);
       }
@@ -99,32 +120,37 @@ export default function JobsPage() {
         }),
       });
 
-      if (response.ok) {
-        toast.success('Application submitted successfully!');
-        // Refresh jobs to update application status
-        const params = new URLSearchParams();
-        if (filters.type !== 'all') {
-          params.append('type', filters.type);
-        }
-        if (filters.category !== 'all') {
-          params.append('category', filters.category);
-        }
-        if (filters.location) {
-          params.append('location', filters.location);
-        }
-
-        const updatedResponse = await fetch('/api/jobs?' + params.toString());
-        if (updatedResponse.ok) {
-          const data = await updatedResponse.json();
-          setJobs(data.jobs || []);
-        }
-      } else {
+      if (!response.ok) {
         const error = await response.json();
-        toast.error(error.error || 'Failed to submit application');
+        throw new Error(error.error || 'Failed to submit application');
       }
+
+      toast.success('Application submitted successfully!');
+
+      // Refresh jobs to update application status
+      const params = new URLSearchParams();
+      if (filters.type !== 'all') {
+        params.append('type', filters.type);
+      }
+      if (filters.category !== 'all') {
+        params.append('category', filters.category);
+      }
+      if (filters.location) {
+        params.append('location', filters.location);
+      }
+
+      const jobsResponse = await fetch('/api/jobs?' + params.toString());
+      if (!jobsResponse.ok) {
+        throw new Error('Failed to refresh jobs');
+      }
+
+      const data = await jobsResponse.json();
+      setJobs(data.jobs || []);
     } catch (error) {
       console.error('Error applying for job:', error);
-      toast.error('Failed to submit application');
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to submit application'
+      );
     }
   };
 
@@ -177,11 +203,11 @@ export default function JobsPage() {
                     <SelectValue placeholder="Job Type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="full-time">Full Time</SelectItem>
-                    <SelectItem value="part-time">Part Time</SelectItem>
-                    <SelectItem value="internship">Internship</SelectItem>
-                    <SelectItem value="contract">Contract</SelectItem>
+                    {JOB_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -197,16 +223,11 @@ export default function JobsPage() {
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="software">
-                      Software Development
-                    </SelectItem>
-                    <SelectItem value="data">Data Science</SelectItem>
-                    <SelectItem value="design">Design</SelectItem>
-                    <SelectItem value="marketing">Marketing</SelectItem>
-                    <SelectItem value="sales">Sales</SelectItem>
-                    <SelectItem value="finance">Finance</SelectItem>
-                    <SelectItem value="hr">HR</SelectItem>
+                    {JOB_CATEGORIES.map((category) => (
+                      <SelectItem key={category.value} value={category.value}>
+                        {category.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
