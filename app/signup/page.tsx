@@ -64,7 +64,7 @@ export default function SignUpPage() {
               full_name: formData.fullName,
               role: formData.role,
             },
-            emailRedirectTo: getAuthCallbackUrl('/onboarding'),
+            emailRedirectTo: getAuthCallbackUrl('/bootstrap'),
           },
         });
 
@@ -130,7 +130,7 @@ export default function SignUpPage() {
         toast.success('Please check your email to confirm your account!');
       } else {
         toast.success('Account created successfully!');
-        router.push('/dashboard');
+        router.push('/bootstrap');
       }
     } catch (error) {
       toast.error('An unexpected error occurred');

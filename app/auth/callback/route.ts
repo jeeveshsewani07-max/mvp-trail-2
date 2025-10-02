@@ -16,30 +16,8 @@ export async function GET(request: NextRequest) {
       if (!error && data?.user) {
         console.log('User authenticated successfully:', data.user.email);
 
-        // Bootstrap user profile and get redirect URL
-        try {
-          const bootstrapResponse = await fetch(`${origin}/api/bootstrap`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({}),
-          });
-
-          if (bootstrapResponse.ok) {
-            const bootstrapData = await bootstrapResponse.json();
-            if (bootstrapData.success && bootstrapData.redirect_url) {
-              return NextResponse.redirect(
-                `${origin}${bootstrapData.redirect_url}`
-              );
-            }
-          }
-        } catch (bootstrapError) {
-          console.error('Bootstrap error:', bootstrapError);
-        }
-
-        // Fallback to default redirect
-        return NextResponse.redirect(`${origin}/dashboard`);
+        // Redirect to bootstrap page for client-side processing
+        return NextResponse.redirect(`${origin}/bootstrap`);
       } else {
         console.error('Auth error:', error);
         return NextResponse.redirect(
