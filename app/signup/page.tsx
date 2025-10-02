@@ -130,7 +130,8 @@ export default function SignUpPage() {
         toast.success('Please check your email to confirm your account!');
       } else {
         toast.success('Account created successfully!');
-        router.push('/dashboard');
+        // Redirect to auth callback for role-based redirection
+        router.push('/auth/callback');
       }
     } catch (error) {
       toast.error('An unexpected error occurred');

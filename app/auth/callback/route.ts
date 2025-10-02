@@ -69,6 +69,40 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // No code provided - redirect to error
-  return NextResponse.redirect(`${origin}/auth/auth-code-error?error=no_code`);
+  // No code provided - try to get current session for direct redirects
+  const supabase = createClient();
+
+  try {
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+
+    if (session?.user) {
+      console.log('Direct redirect - User session found:', session.user.email);
+      console.log('User metadata:', session.user.user_metadata);
+
+      // Get user role from metadata
+      const userRole = session.user.user_metadata?.role || 'student';
+      console.log('User role from metadata:', userRole);
+
+      // Determine redirect URL based on role
+      const redirectUrl = getRoleRedirectUrl(userRole);
+      console.log('Redirecting to:', redirectUrl);
+
+      // If no role found, redirect to main dashboard for role selection
+      if (!session.user.user_metadata?.role) {
+        console.log('No role found in metadata, redirecting to main dashboard');
+        return NextResponse.redirect(`${origin}/dashboard`);
+      }
+
+      return NextResponse.redirect(`${origin}${redirectUrl}`);
+    } else {
+      console.log('No session found, redirecting to login');
+      return NextResponse.redirect(`${origin}/login`);
+    }
+  } catch (err) {
+    console.error('Session check error:', err);
+    return NextResponse.redirect(`${origin}/login`);
+  }
 }

@@ -74,7 +74,8 @@ export default function LoginPage() {
         toast.error(error.message);
       } else {
         toast.success('Successfully signed in!');
-        window.location.href = '/dashboard';
+        // Redirect to auth callback for role-based redirection
+        window.location.href = '/auth/callback';
       }
     } catch (error) {
       toast.error('An unexpected error occurred');
