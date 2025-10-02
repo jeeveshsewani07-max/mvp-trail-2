@@ -16,7 +16,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen gradient-bg flex items-center justify-center">
+      <div
+        className="min-h-screen gradient-bg flex items-center justify-center"
+        suppressHydrationWarning
+      >
         <div className="text-center">
           <Icons.spinner className="h-8 w-8 animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">Loading...</p>
@@ -26,7 +29,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    /* 
+    /*
      * FIXED LAYOUT STRUCTURE:
      * - Use flex instead of fixed positioning to eliminate white gaps
      * - Sidebar takes fixed width (w-64) on large screens, hidden on mobile
@@ -52,15 +55,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Mobile Sidebar - Only shows when open */}
       <aside className="lg:hidden">
-        <Sidebar
-          open={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
+        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       </aside>
 
       {/* Main content area - Flexes to fill remaining space */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* 
+        {/*
          * TOP NAVIGATION:
          * - Sticky header that spans the full width of main content
          * - No manual left padding needed - flex layout handles positioning
@@ -69,19 +69,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <TopNav onMenuClick={() => setSidebarOpen(true)} />
         </header>
 
-        {/* 
+        {/*
          * PAGE CONTENT:
          * - Flexible main content that expands to fill available space
          * - Proper padding and max-width for content readability
          * - No pt-16 needed since header is now in flow
          */}
         <main className="flex-1 overflow-auto">
-          <div className="mx-auto max-w-7xl px-4 lg:px-8 py-6">
-            {children}
-          </div>
+          <div className="mx-auto max-w-7xl px-4 lg:px-8 py-6">{children}</div>
         </main>
       </div>
     </div>
   );
 }
-
