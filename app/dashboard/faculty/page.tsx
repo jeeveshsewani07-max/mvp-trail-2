@@ -141,7 +141,7 @@ export default function FacultyDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {role_data.designation ? (
+              {role_data?.designation ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <span className="text-sm text-muted-foreground">

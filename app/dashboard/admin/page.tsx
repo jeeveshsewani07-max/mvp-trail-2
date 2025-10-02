@@ -149,22 +149,28 @@ export default function AdminDashboard() {
                   <span className="text-sm text-muted-foreground">
                     Institution:
                   </span>
-                  <p className="font-medium">{role_data.institution_name}</p>
+                  <p className="font-medium">
+                    {role_data?.institution_name || 'Not set'}
+                  </p>
                 </div>
                 <div>
                   <span className="text-sm text-muted-foreground">Code:</span>
-                  <p className="font-medium">{role_data.institution_code}</p>
+                  <p className="font-medium">
+                    {role_data?.institution_code || 'Not set'}
+                  </p>
                 </div>
                 <div>
                   <span className="text-sm text-muted-foreground">Type:</span>
-                  <p className="font-medium">{role_data.institution_type}</p>
+                  <p className="font-medium">
+                    {role_data?.institution_type || 'Not set'}
+                  </p>
                 </div>
                 <div>
                   <span className="text-sm text-muted-foreground">
                     Website:
                   </span>
                   <p className="font-medium">
-                    {role_data.institution_website || 'Not set'}
+                    {role_data?.institution_website || 'Not set'}
                   </p>
                 </div>
               </div>
