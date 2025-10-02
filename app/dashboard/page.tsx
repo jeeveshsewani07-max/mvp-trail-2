@@ -1,53 +1,67 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/components/providers';
 import { useRouter } from 'next/navigation';
 import { Icons } from '@/components/icons';
+import { supabase } from '@/lib/supabase/client';
 
 export default function DashboardPage() {
-  const { user, dbUser, loading } = useAuth();
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     const handleRedirect = async () => {
-      console.log('Dashboard page - Auth loading:', loading);
-      console.log('Dashboard page - User:', user);
-      console.log('Dashboard page - DBUser:', dbUser);
+      console.log('Dashboard page - Checking session...');
 
-      if (loading) {
-        console.log('Auth still loading...');
-        return;
-      }
+      try {
+        // Get current session directly from Supabase
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
 
-      if (!user) {
-        console.log('No user, redirecting to login');
+        console.log('Session check result:', { session, error });
+
+        if (error) {
+          console.error('Session error:', error);
+          router.push('/login');
+          return;
+        }
+
+        if (!session?.user) {
+          console.log('No session found, redirecting to login');
+          router.push('/login');
+          return;
+        }
+
+        console.log('User found:', session.user.email);
+        console.log('User metadata:', session.user.user_metadata);
+
+        // Get role from user metadata
+        const userRole = session.user.user_metadata?.role || 'student';
+        console.log('User role:', userRole);
+
+        setRedirecting(true);
+
+        // Determine redirect URL based on role
+        const redirectUrl = getRoleRedirectUrl(userRole);
+        console.log('Redirecting to:', redirectUrl);
+
+        // Small delay to show loading state
+        setTimeout(() => {
+          router.push(redirectUrl);
+        }, 500);
+      } catch (error) {
+        console.error('Dashboard redirect error:', error);
         router.push('/login');
-        return;
+      } finally {
+        setLoading(false);
       }
-
-      console.log('User found:', user.email);
-      console.log('User metadata:', user.user_metadata);
-
-      // Get role from user metadata
-      const userRole = user.user_metadata?.role || 'student';
-      console.log('User role:', userRole);
-
-      setRedirecting(true);
-
-      // Determine redirect URL based on role
-      const redirectUrl = getRoleRedirectUrl(userRole);
-      console.log('Redirecting to:', redirectUrl);
-
-      // Small delay to show loading state
-      setTimeout(() => {
-        router.push(redirectUrl);
-      }, 500);
     };
 
     handleRedirect();
-  }, [user, dbUser, loading, router]);
+  }, [router]);
 
   const getRoleRedirectUrl = (role: string): string => {
     switch (role) {
