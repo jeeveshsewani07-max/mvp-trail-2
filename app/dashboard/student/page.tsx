@@ -154,14 +154,14 @@ export default function StudentDashboard() {
                 <span className="text-sm font-medium">Profile Completion</span>
                 <Badge
                   variant={
-                    role_data.is_profile_complete ? 'default' : 'secondary'
+                    role_data?.is_profile_complete ? 'default' : 'secondary'
                   }
                 >
-                  {role_data.is_profile_complete ? 'Complete' : 'Incomplete'}
+                  {role_data?.is_profile_complete ? 'Complete' : 'Incomplete'}
                 </Badge>
               </div>
 
-              {role_data.roll_number && (
+              {role_data?.roll_number && (
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">Roll Number:</span>
@@ -182,7 +182,7 @@ export default function StudentDashboard() {
                 </div>
               )}
 
-              {!role_data.is_profile_complete && (
+              {!role_data?.is_profile_complete && (
                 <Button className="w-full">
                   <Icons.edit className="mr-2 h-4 w-4" />
                   Complete Profile
