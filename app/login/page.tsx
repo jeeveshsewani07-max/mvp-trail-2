@@ -83,15 +83,18 @@ export default function LoginPage() {
         } else {
           toast.error(error.message);
         }
-      } else {
-        toast.success('Successfully signed in!');
-        console.log('Login successful, redirecting to dashboard...');
+      } else if (data) {
+        console.log('Login successful!', data);
+        console.log('Session:', data.session);
+        console.log('User:', data.user);
 
-        // Add a small delay to ensure session is established
+        toast.success('Successfully signed in!');
+
+        // Wait a bit longer for session to be properly set
         setTimeout(() => {
           console.log('Redirecting to /dashboard');
           window.location.href = '/dashboard';
-        }, 1000);
+        }, 1500);
       }
     } catch (error) {
       toast.error('An unexpected error occurred');
