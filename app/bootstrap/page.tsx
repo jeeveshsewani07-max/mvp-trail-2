@@ -38,7 +38,9 @@ export default function BootstrapPage() {
       if (!user) {
         console.log('No user found, redirecting to login');
         // If no user, redirect to login
-        router.push('/login');
+        setTimeout(() => {
+          router.push('/login');
+        }, 2000); // Give some time for session to establish
         return;
       }
 
@@ -63,14 +65,21 @@ export default function BootstrapPage() {
         console.log('Bootstrap API response data:', data);
 
         if (response.ok && data.success) {
+          console.log(
+            'Bootstrap successful, redirecting to:',
+            data.redirect_url
+          );
           // Redirect to role-specific dashboard
           if (data.redirect_url) {
             router.push(data.redirect_url);
             return;
           }
+        } else {
+          console.error('Bootstrap API failed:', data);
         }
 
         // If bootstrap fails, try to get user profile to determine redirect
+        console.log('Trying to get user profile...');
         const profileResponse = await fetch('/api/bootstrap', {
           method: 'GET',
           headers: {
@@ -80,15 +89,18 @@ export default function BootstrapPage() {
 
         if (profileResponse.ok) {
           const profileData = await profileResponse.json();
+          console.log('Profile data:', profileData);
           if (profileData.profile?.role) {
             const role = profileData.profile.role;
             const redirectUrl = getRoleRedirectUrl(role);
+            console.log('Redirecting based on profile role:', redirectUrl);
             router.push(redirectUrl);
             return;
           }
         }
 
         // Fallback to general dashboard
+        console.log('Falling back to general dashboard');
         router.push('/dashboard');
       } catch (err) {
         console.error('Bootstrap error:', err);
