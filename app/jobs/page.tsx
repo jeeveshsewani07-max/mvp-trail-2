@@ -48,7 +48,7 @@ export default function JobsPage() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     type: 'all',
-    category: '',
+    category: 'all',
     location: '',
   });
 
@@ -57,18 +57,24 @@ export default function JobsPage() {
       if (!user) return;
 
       try {
-        const queryParams = new URLSearchParams({
-          type: filters.type,
-          ...(filters.category && { category: filters.category }),
-          ...(filters.location && { location: filters.location }),
-        });
+        const params = new URLSearchParams();
+        if (filters.type !== 'all') {
+          params.append('type', filters.type);
+        }
+        if (filters.category !== 'all') {
+          params.append('category', filters.category);
+        }
+        if (filters.location) {
+          params.append('location', filters.location);
+        }
 
-        const response = await fetch('/api/jobs?' + queryParams.toString());
+        const response = await fetch('/api/jobs?' + params.toString());
         if (response.ok) {
           const data = await response.json();
-          setJobs(data.jobs);
+          setJobs(data.jobs || []);
         } else {
-          toast.error('Failed to fetch jobs');
+          const error = await response.json();
+          toast.error(error.error || 'Failed to fetch jobs');
         }
       } catch (error) {
         console.error('Error fetching jobs:', error);
@@ -96,12 +102,21 @@ export default function JobsPage() {
       if (response.ok) {
         toast.success('Application submitted successfully!');
         // Refresh jobs to update application status
-        const updatedResponse = await fetch(
-          '/api/jobs?' + new URLSearchParams(filters).toString()
-        );
+        const params = new URLSearchParams();
+        if (filters.type !== 'all') {
+          params.append('type', filters.type);
+        }
+        if (filters.category !== 'all') {
+          params.append('category', filters.category);
+        }
+        if (filters.location) {
+          params.append('location', filters.location);
+        }
+
+        const updatedResponse = await fetch('/api/jobs?' + params.toString());
         if (updatedResponse.ok) {
           const data = await updatedResponse.json();
-          setJobs(data.jobs);
+          setJobs(data.jobs || []);
         }
       } else {
         const error = await response.json();
@@ -182,7 +197,7 @@ export default function JobsPage() {
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Categories</SelectItem>
+                    <SelectItem value="all">All Categories</SelectItem>
                     <SelectItem value="software">
                       Software Development
                     </SelectItem>

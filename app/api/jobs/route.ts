@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   const supabase = createRouteHandlerClient({ cookies });
   const { searchParams } = new URL(request.url);
 
-  const type = searchParams.get('type') || 'all';
+  const type = searchParams.get('type');
   const category = searchParams.get('category');
   const location = searchParams.get('location');
   const page = parseInt(searchParams.get('page') || '1');
@@ -28,47 +28,51 @@ export async function GET(request: Request) {
         `
         *,
         company:companies(name, logo_url, industry),
-        applications:job_applications(
+        applications:job_applications!inner(
           id,
           status,
           created_at
         )
-      `
+      `,
+        { count: 'exact' }
       )
       .eq('status', 'active')
       .order('created_at', { ascending: false });
 
     // Apply filters
-    if (type !== 'all') {
+    if (type && type !== 'all') {
       query = query.eq('type', type);
     }
-    if (category) {
+    if (category && category !== 'all') {
       query = query.eq('category', category);
     }
     if (location) {
-      query = query.eq('location', location);
+      query = query.ilike('location', `%${location}%`);
     }
 
     // Apply pagination
     const start = (page - 1) * limit;
     query = query.range(start, start + limit - 1);
 
-    const { data: jobs, error: jobsError } = await query;
+    const { data: jobs, error: jobsError, count } = await query;
 
     if (jobsError) {
+      console.error('Error fetching jobs:', jobsError);
       return NextResponse.json(
         { error: 'Failed to fetch jobs' },
         { status: 500 }
       );
     }
 
-    // Get total count for pagination
-    const { count } = await supabase
-      .from('jobs')
-      .select('*', { count: 'exact', head: true });
+    // Format jobs to include empty applications array if none exist
+    const formattedJobs =
+      jobs?.map((job) => ({
+        ...job,
+        applications: job.applications || [],
+      })) || [];
 
     return NextResponse.json({
-      jobs,
+      jobs: formattedJobs,
       pagination: {
         total: count || 0,
         page,
@@ -77,6 +81,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
+    console.error('Server error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -146,6 +151,7 @@ export async function POST(request: Request) {
       .single();
 
     if (jobError) {
+      console.error('Error creating job:', jobError);
       return NextResponse.json(
         { error: 'Failed to create job' },
         { status: 500 }
@@ -154,6 +160,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(job);
   } catch (error) {
+    console.error('Server error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
