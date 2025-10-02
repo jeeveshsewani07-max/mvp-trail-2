@@ -16,12 +16,29 @@ export async function GET(request: NextRequest) {
       if (!error && data?.user) {
         console.log('User authenticated successfully:', data.user.email);
 
-        // Check if user needs onboarding (new signup)
-        if (next === '/onboarding') {
-          return NextResponse.redirect(`${origin}/profile`);
+        // Bootstrap user profile and get redirect URL
+        try {
+          const bootstrapResponse = await fetch(`${origin}/api/bootstrap`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({}),
+          });
+
+          if (bootstrapResponse.ok) {
+            const bootstrapData = await bootstrapResponse.json();
+            if (bootstrapData.success && bootstrapData.redirect_url) {
+              return NextResponse.redirect(
+                `${origin}${bootstrapData.redirect_url}`
+              );
+            }
+          }
+        } catch (bootstrapError) {
+          console.error('Bootstrap error:', bootstrapError);
         }
 
-        // Redirect to dashboard for existing users
+        // Fallback to default redirect
         return NextResponse.redirect(`${origin}/dashboard`);
       } else {
         console.error('Auth error:', error);

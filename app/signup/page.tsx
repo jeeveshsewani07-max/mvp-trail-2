@@ -148,7 +148,7 @@ export default function SignUpPage() {
         options: {
           redirectTo: `${getSiteUrl()}/auth/callback`,
           queryParams: {
-            next: '/onboarding',
+            next: '/dashboard',
             role: formData.role || 'student',
           },
         },
