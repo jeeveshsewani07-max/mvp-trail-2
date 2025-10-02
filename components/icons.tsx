@@ -99,6 +99,7 @@ import {
   MoreVertical,
   Lightbulb,
   Send,
+  Activity,
 } from 'lucide-react';
 
 export const Icons = {
@@ -112,7 +113,7 @@ export const Icons = {
   userCheck: UserCheck,
   building: Building2,
   briefcase: Briefcase,
-  
+
   // Navigation
   home: Home,
   search: Search,
@@ -121,7 +122,7 @@ export const Icons = {
   settings: Settings,
   bell: Bell,
   logOut: LogOut,
-  
+
   // Actions
   plus: Plus,
   edit: Edit,
@@ -134,7 +135,7 @@ export const Icons = {
   copy: Copy,
   send: Send,
   refresh: RefreshCw,
-  
+
   // Content
   calendar: Calendar,
   award: Award,
@@ -147,7 +148,7 @@ export const Icons = {
   video: Video,
   link: Link,
   externalLink: ExternalLink,
-  
+
   // Status & Feedback
   check: Check,
   x: X,
@@ -156,11 +157,11 @@ export const Icons = {
   checkCircle: CheckCircle,
   info: Info,
   helpCircle: HelpCircle,
-  
+
   // Theme
   moon: Moon,
   sun: Sun,
-  
+
   // Directions
   chevronLeft: ChevronLeft,
   chevronRight: ChevronRight,
@@ -170,17 +171,17 @@ export const Icons = {
   arrowRight: ArrowRight,
   arrowUp: ArrowUp,
   arrowDown: ArrowDown,
-  
+
   // Location & Time
   mapPin: MapPin,
   clock: Clock,
-  
+
   // Business
   dollarSign: DollarSign,
   trendingUp: TrendingUp,
   barChart: BarChart3,
   pieChart: PieChart,
-  
+
   // Social Media
   github: Github,
   linkedin: Linkedin,
@@ -190,14 +191,14 @@ export const Icons = {
   globe: Globe,
   phone: Phone,
   messageCircle: MessageCircle,
-  
+
   // Security
   shield: Shield,
   lock: Lock,
   unlock: Unlock,
   key: Key,
   qrCode: QrCode,
-  
+
   // Achievement & Gamification
   badge: BadgeIcon,
   medal: Medal,
@@ -208,21 +209,21 @@ export const Icons = {
   target: Target,
   rocket: Rocket,
   zap: Zap,
-  
+
   // Layout
   grid: Grid,
   list: List,
   layers: Layers,
   moreHorizontal: MoreHorizontal,
   moreVertical: MoreVertical,
-  
+
   // Tech
   database: Database,
   server: Server,
   code: Code,
   terminal: Terminal,
   cpu: Cpu,
-  
+
   // Devices
   smartphone: Smartphone,
   tablet: Tablet,
@@ -230,11 +231,12 @@ export const Icons = {
   monitor: Monitor,
   wifi: Wifi,
   wifiOff: WifiOff,
-  
+
   // Actions & Utility
   lightbulb: Lightbulb,
   send: Send,
-  
+  activity: Activity,
+
   // Google OAuth
   google: (props: React.SVGProps<SVGSVGElement>) => (
     <svg viewBox="0 0 24 24" {...props}>
@@ -257,5 +259,3 @@ export const Icons = {
     </svg>
   ),
 };
-
-
