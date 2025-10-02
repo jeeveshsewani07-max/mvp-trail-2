@@ -23,6 +23,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [authMethod, setAuthMethod] = useState<'magic' | 'password'>('magic');
+  const [showResendVerification, setShowResendVerification] = useState(false);
 
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +72,17 @@ export default function LoginPage() {
       });
 
       if (error) {
-        toast.error(error.message);
+        if (
+          error.message.includes('email not confirmed') ||
+          error.message.includes('Email not confirmed')
+        ) {
+          toast.error(
+            'Please check your email and click the verification link before signing in.'
+          );
+          setShowResendVerification(true);
+        } else {
+          toast.error(error.message);
+        }
       } else {
         toast.success('Successfully signed in!');
         console.log('Login successful, redirecting to dashboard...');
@@ -81,6 +92,35 @@ export default function LoginPage() {
           console.log('Redirecting to /dashboard');
           window.location.href = '/dashboard';
         }, 1000);
+      }
+    } catch (error) {
+      toast.error('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      toast.error('Please enter your email address first');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: `${getSiteUrl()}/dashboard`,
+        },
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('Verification email sent! Please check your inbox.');
+        setShowResendVerification(false);
       }
     } catch (error) {
       toast.error('An unexpected error occurred');
@@ -228,6 +268,29 @@ export default function LoginPage() {
                   )}
                   Sign In
                 </Button>
+
+                {showResendVerification && (
+                  <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-2">
+                      Your email needs to be verified before you can sign in.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResendVerification}
+                      disabled={isLoading}
+                      className="w-full"
+                    >
+                      {isLoading ? (
+                        <Icons.spinner className="mr-2 h-3 w-3 animate-spin" />
+                      ) : (
+                        <Icons.mail className="mr-2 h-3 w-3" />
+                      )}
+                      Resend Verification Email
+                    </Button>
+                  </div>
+                )}
               </form>
             )}
 

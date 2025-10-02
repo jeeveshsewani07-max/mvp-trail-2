@@ -127,11 +127,25 @@ export default function SignUpPage() {
       }
 
       if (data.user && !data.session) {
-        toast.success('Please check your email to confirm your account!');
-      } else {
+        toast.success(
+          'Account created! Please check your email and click the verification link to complete signup.'
+        );
+        // Show a message that they need to verify email
+        setFormData((prev) => ({
+          ...prev,
+          email: '',
+          password: '',
+          confirmPassword: '',
+        }));
+        return;
+      } else if (data.session) {
         toast.success('Account created successfully!');
         // Redirect to dashboard for role-based redirection
         router.push('/dashboard');
+      } else {
+        toast.success(
+          'Account created! Please check your email to verify your account.'
+        );
       }
     } catch (error) {
       toast.error('An unexpected error occurred');
