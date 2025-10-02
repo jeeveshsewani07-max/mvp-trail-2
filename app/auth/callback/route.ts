@@ -19,7 +19,12 @@ function getRoleRedirectUrl(role: string): string {
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/dashboard';
+
+  console.log('Auth callback - URL:', request.url);
+  console.log(
+    'Auth callback - Search params:',
+    Object.fromEntries(searchParams.entries())
+  );
 
   if (code) {
     const supabase = createClient();
@@ -30,6 +35,8 @@ export async function GET(request: NextRequest) {
 
       if (!error && data?.user) {
         console.log('User authenticated successfully:', data.user.email);
+        console.log('User metadata:', data.user.user_metadata);
+        console.log('User app metadata:', data.user.app_metadata);
 
         // Get user role from metadata
         const userRole = data.user.user_metadata?.role || 'student';
@@ -38,6 +45,14 @@ export async function GET(request: NextRequest) {
         // Determine redirect URL based on role
         const redirectUrl = getRoleRedirectUrl(userRole);
         console.log('Redirecting to:', redirectUrl);
+
+        // If no role found, redirect to main dashboard for role selection
+        if (!data.user.user_metadata?.role) {
+          console.log(
+            'No role found in metadata, redirecting to main dashboard'
+          );
+          return NextResponse.redirect(`${origin}/dashboard`);
+        }
 
         return NextResponse.redirect(`${origin}${redirectUrl}`);
       } else {

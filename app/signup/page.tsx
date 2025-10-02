@@ -64,7 +64,7 @@ export default function SignUpPage() {
               full_name: formData.fullName,
               role: formData.role,
             },
-            emailRedirectTo: getAuthCallbackUrl('/dashboard'),
+            emailRedirectTo: getAuthCallbackUrl(),
           },
         });
 
@@ -148,7 +148,6 @@ export default function SignUpPage() {
         options: {
           redirectTo: `${getSiteUrl()}/auth/callback`,
           queryParams: {
-            next: '/dashboard',
             role: formData.role || 'student',
           },
         },
