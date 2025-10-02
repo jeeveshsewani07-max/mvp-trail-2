@@ -38,21 +38,42 @@ export async function GET(request: NextRequest) {
         console.log('User metadata:', data.user.user_metadata);
         console.log('User app metadata:', data.user.app_metadata);
 
-        // Get user role from metadata
-        const userRole = data.user.user_metadata?.role || 'student';
+        // Get user role from metadata or query params
+        let userRole = data.user.user_metadata?.role;
+        const roleFromQuery = searchParams.get('role');
+
         console.log('User role from metadata:', userRole);
+        console.log('Role from query params:', roleFromQuery);
+
+        // If no role in metadata but we have it in query params (from signup), update user metadata
+        if (!userRole && roleFromQuery) {
+          console.log(
+            'Updating user with role from query params:',
+            roleFromQuery
+          );
+          const { error: updateError } = await supabase.auth.updateUser({
+            data: {
+              role: roleFromQuery,
+              full_name:
+                data.user.user_metadata?.full_name ||
+                data.user.email?.split('@')[0],
+            },
+          });
+
+          if (updateError) {
+            console.error('Failed to update user role:', updateError);
+          } else {
+            userRole = roleFromQuery;
+          }
+        }
+
+        // Default to student if no role
+        userRole = userRole || 'student';
+        console.log('Final user role:', userRole);
 
         // Determine redirect URL based on role
         const redirectUrl = getRoleRedirectUrl(userRole);
         console.log('Redirecting to:', redirectUrl);
-
-        // If no role found, redirect to main dashboard for role selection
-        if (!data.user.user_metadata?.role) {
-          console.log(
-            'No role found in metadata, redirecting to main dashboard'
-          );
-          return NextResponse.redirect(`${origin}/dashboard`);
-        }
 
         return NextResponse.redirect(`${origin}${redirectUrl}`);
       } else {

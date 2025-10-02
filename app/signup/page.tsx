@@ -64,7 +64,7 @@ export default function SignUpPage() {
               full_name: formData.fullName,
               role: formData.role,
             },
-            emailRedirectTo: `${getSiteUrl()}/dashboard`,
+            emailRedirectTo: `${getSiteUrl()}/auth/callback`,
           },
         });
 
@@ -109,24 +109,16 @@ export default function SignUpPage() {
     setIsLoading(true);
 
     try {
-      // First, sign in anonymously to get a session
-      const { data: anonymousData, error: anonymousError } =
-        await supabase.auth.signInAnonymously();
-
-      if (anonymousError) {
-        toast.error(
-          'Failed to create anonymous session: ' + anonymousError.message
-        );
-        return;
-      }
-
-      // Update the anonymous user with email, password, and metadata
-      const { data, error } = await supabase.auth.updateUser({
+      // Sign up with password - with email confirmation disabled in Supabase
+      const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        data: {
-          full_name: formData.fullName,
-          role: formData.role,
+        options: {
+          data: {
+            full_name: formData.fullName,
+            role: formData.role,
+          },
+          emailRedirectTo: `${getSiteUrl()}/auth/callback`,
         },
       });
 
@@ -135,10 +127,25 @@ export default function SignUpPage() {
         return;
       }
 
-      if (data.user) {
+      // Check if we have a session (email confirmation disabled)
+      if (data.session) {
         toast.success('Account created successfully!');
         // Redirect to dashboard for role-based redirection
-        router.push('/dashboard');
+        console.log('Signup successful, redirecting to dashboard...');
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1000);
+      } else if (data.user && !data.session) {
+        // Email confirmation is required
+        toast.success(
+          'Account created! Please check your email to verify your account.'
+        );
+        setFormData((prev) => ({
+          ...prev,
+          email: '',
+          password: '',
+          confirmPassword: '',
+        }));
       } else {
         toast.error('Account creation failed');
       }
@@ -158,42 +165,26 @@ export default function SignUpPage() {
     setIsGoogleLoading(true);
 
     try {
-      // First, sign in anonymously to get a session
-      const { data: anonymousData, error: anonymousError } =
-        await supabase.auth.signInAnonymously();
+      // Store role in localStorage to use after OAuth callback
+      localStorage.setItem('pendingUserRole', formData.role);
 
-      if (anonymousError) {
-        toast.error(
-          'Failed to create anonymous session: ' + anonymousError.message
-        );
-        return;
-      }
-
-      // Update the anonymous user with role metadata
-      const { error: updateError } = await supabase.auth.updateUser({
-        data: {
-          role: formData.role,
-        },
-      });
-
-      if (updateError) {
-        toast.error('Failed to set role: ' + updateError.message);
-        return;
-      }
-
-      // Now proceed with Google OAuth
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${getSiteUrl()}/dashboard`,
+          redirectTo: `${getSiteUrl()}/auth/callback`,
+          queryParams: {
+            role: formData.role,
+          },
         },
       });
 
       if (error) {
         toast.error(error.message);
+        localStorage.removeItem('pendingUserRole');
       }
     } catch (error) {
       toast.error('An unexpected error occurred');
+      localStorage.removeItem('pendingUserRole');
     } finally {
       setIsGoogleLoading(false);
     }

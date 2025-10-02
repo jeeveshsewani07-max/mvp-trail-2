@@ -39,7 +39,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${getSiteUrl()}/dashboard`,
+          emailRedirectTo: `${getSiteUrl()}/auth/callback`,
         },
       });
 
@@ -112,7 +112,7 @@ export default function LoginPage() {
         type: 'signup',
         email: email,
         options: {
-          emailRedirectTo: `${getSiteUrl()}/dashboard`,
+          emailRedirectTo: `${getSiteUrl()}/auth/callback`,
         },
       });
 
@@ -160,7 +160,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${getSiteUrl()}/dashboard`,
+          redirectTo: `${getSiteUrl()}/auth/callback`,
         },
       });
 
@@ -209,20 +209,6 @@ export default function LoginPage() {
                 <Icons.google className="mr-2 h-4 w-4" />
               )}
               Continue with Google
-            </Button>
-
-            <Button
-              onClick={handleAnonymousLogin}
-              disabled={isLoading}
-              className="w-full"
-              variant="secondary"
-            >
-              {isLoading ? (
-                <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Icons.user className="mr-2 h-4 w-4" />
-              )}
-              Continue Anonymously
             </Button>
 
             {/* Authentication Method Toggle */}
