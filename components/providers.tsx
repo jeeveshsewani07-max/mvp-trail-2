@@ -36,8 +36,10 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [dbUser, setDbUser] = useState<DbUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const getInitialSession = async () => {
       try {
         // Get current session
@@ -63,7 +65,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
               session.user.user_metadata?.full_name || session.user.email || '',
             role: session.user.user_metadata?.role || 'student',
             createdAt: new Date(session.user.created_at),
-            updatedAt: new Date(),
+            updatedAt: new Date(session.user.created_at),
           };
 
           setDbUser(basicProfile as any);
@@ -94,7 +96,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
             session.user.user_metadata?.full_name || session.user.email || '',
           role: session.user.user_metadata?.role || 'student',
           createdAt: new Date(session.user.created_at),
-          updatedAt: new Date(),
+          updatedAt: new Date(session.user.created_at),
         };
 
         setDbUser(basicProfile as any);
@@ -124,6 +126,17 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Error signing out:', error);
     }
   };
+
+  // Prevent hydration mismatch by not rendering until client-side
+  if (!mounted) {
+    return (
+      <AuthContext.Provider
+        value={{ user: null, dbUser: null, loading: true, signOut }}
+      >
+        {children}
+      </AuthContext.Provider>
+    );
+  }
 
   return (
     <AuthContext.Provider value={{ user, dbUser, loading, signOut }}>
