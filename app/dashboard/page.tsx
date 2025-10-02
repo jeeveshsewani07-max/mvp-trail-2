@@ -9,6 +9,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
     const handleRedirect = async () => {
@@ -31,6 +32,8 @@ export default function DashboardPage() {
 
         if (!session?.user) {
           console.log('No session found, redirecting to login');
+          setHasSession(false);
+          setLoading(false);
           router.push('/login');
           return;
         }
@@ -38,18 +41,11 @@ export default function DashboardPage() {
         console.log('User found:', session.user.email || 'Anonymous user');
         console.log('User metadata:', session.user.user_metadata);
 
+        setHasSession(true);
+
         // Get role from user metadata
         const userRole = session.user.user_metadata?.role || 'student';
         console.log('User role:', userRole);
-
-        // If user is anonymous and has no role, redirect to profile setup
-        if (!session.user.email && !userRole) {
-          console.log(
-            'Anonymous user with no role, redirecting to profile setup'
-          );
-          router.push('/profile');
-          return;
-        }
 
         setRedirecting(true);
 
@@ -63,6 +59,8 @@ export default function DashboardPage() {
         }, 500);
       } catch (error) {
         console.error('Dashboard redirect error:', error);
+        setHasSession(false);
+        setLoading(false);
         router.push('/login');
       } finally {
         setLoading(false);
@@ -105,7 +103,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (!user) {
+  if (!loading && !hasSession) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
         <div className="text-center">
