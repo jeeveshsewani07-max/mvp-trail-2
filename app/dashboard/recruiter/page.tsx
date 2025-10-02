@@ -57,7 +57,7 @@ export default function RecruiterDashboard() {
               email: user.email || '',
               role: user.user_metadata?.role || 'recruiter',
               created_at: user.created_at,
-              updated_at: new Date().toISOString(),
+              updated_at: user.created_at || '',
             },
             role_data: {
               recruiter_id: user.id,
@@ -74,7 +74,7 @@ export default function RecruiterDashboard() {
             email: user.email || '',
             role: user.user_metadata?.role || 'recruiter',
             created_at: user.created_at,
-            updated_at: new Date().toISOString(),
+            updated_at: user.created_at || '',
           },
           role_data: {
             recruiter_id: user.id,

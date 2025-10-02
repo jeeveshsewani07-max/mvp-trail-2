@@ -56,7 +56,7 @@ export default function AdminDashboard() {
               email: user.email || '',
               role: user.user_metadata?.role || 'institution_admin',
               created_at: user.created_at,
-              updated_at: new Date().toISOString(),
+              updated_at: user.created_at || '',
             },
             role_data: {
               institution_id: user.id,
@@ -76,7 +76,7 @@ export default function AdminDashboard() {
             email: user.email || '',
             role: user.user_metadata?.role || 'institution_admin',
             created_at: user.created_at,
-            updated_at: new Date().toISOString(),
+            updated_at: user.created_at || '',
           },
           role_data: {
             institution_id: user.id,

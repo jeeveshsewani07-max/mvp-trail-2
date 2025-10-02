@@ -59,7 +59,7 @@ export default function FacultyDashboard() {
               email: user.email || '',
               role: user.user_metadata?.role || 'faculty',
               created_at: user.created_at,
-              updated_at: new Date().toISOString(),
+              updated_at: user.created_at || '',
             },
             role_data: {
               faculty_id: user.id,
@@ -76,7 +76,7 @@ export default function FacultyDashboard() {
             email: user.email || '',
             role: user.user_metadata?.role || 'faculty',
             created_at: user.created_at,
-            updated_at: new Date().toISOString(),
+            updated_at: user.created_at || '',
           },
           role_data: {
             faculty_id: user.id,
