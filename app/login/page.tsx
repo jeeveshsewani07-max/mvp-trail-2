@@ -74,7 +74,7 @@ export default function LoginPage() {
         toast.error(error.message);
       } else {
         toast.success('Successfully signed in!');
-        window.location.href = '/bootstrap';
+        window.location.href = '/dashboard';
       }
     } catch (error) {
       toast.error('An unexpected error occurred');

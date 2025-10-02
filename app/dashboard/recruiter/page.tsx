@@ -49,10 +49,38 @@ export default function RecruiterDashboard() {
           const data = await response.json();
           setProfile(data);
         } else {
-          console.error('Failed to fetch profile');
+          console.error('Failed to fetch profile, using basic profile');
+          const basicProfile = {
+            profile: {
+              id: user.id,
+              full_name: user.user_metadata?.full_name || user.email || 'User',
+              email: user.email || '',
+              role: user.user_metadata?.role || 'recruiter',
+              created_at: user.created_at,
+              updated_at: new Date().toISOString(),
+            },
+            role_data: {
+              recruiter_id: user.id,
+            },
+          };
+          setProfile(basicProfile);
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
+        const basicProfile = {
+          profile: {
+            id: user.id,
+            full_name: user.user_metadata?.full_name || user.email || 'User',
+            email: user.email || '',
+            role: user.user_metadata?.role || 'recruiter',
+            created_at: user.created_at,
+            updated_at: new Date().toISOString(),
+          },
+          role_data: {
+            recruiter_id: user.id,
+          },
+        };
+        setProfile(basicProfile);
       } finally {
         setLoading(false);
       }

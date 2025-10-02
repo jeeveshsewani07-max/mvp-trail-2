@@ -48,10 +48,44 @@ export default function AdminDashboard() {
           const data = await response.json();
           setProfile(data);
         } else {
-          console.error('Failed to fetch profile');
+          console.error('Failed to fetch profile, using basic profile');
+          const basicProfile = {
+            profile: {
+              id: user.id,
+              full_name: user.user_metadata?.full_name || user.email || 'User',
+              email: user.email || '',
+              role: user.user_metadata?.role || 'institution_admin',
+              created_at: user.created_at,
+              updated_at: new Date().toISOString(),
+            },
+            role_data: {
+              institution_id: user.id,
+              institution_name: `${user.user_metadata?.full_name || 'User'}'s Institution`,
+              institution_code: `INST_${user.id.substring(0, 8)}`,
+              institution_type: 'University',
+            },
+          };
+          setProfile(basicProfile);
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
+        const basicProfile = {
+          profile: {
+            id: user.id,
+            full_name: user.user_metadata?.full_name || user.email || 'User',
+            email: user.email || '',
+            role: user.user_metadata?.role || 'institution_admin',
+            created_at: user.created_at,
+            updated_at: new Date().toISOString(),
+          },
+          role_data: {
+            institution_id: user.id,
+            institution_name: `${user.user_metadata?.full_name || 'User'}'s Institution`,
+            institution_code: `INST_${user.id.substring(0, 8)}`,
+            institution_type: 'University',
+          },
+        };
+        setProfile(basicProfile);
       } finally {
         setLoading(false);
       }

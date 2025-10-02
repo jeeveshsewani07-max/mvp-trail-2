@@ -1,6 +1,21 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
+function getRoleRedirectUrl(role: string): string {
+  switch (role) {
+    case 'student':
+      return '/dashboard/student';
+    case 'recruiter':
+      return '/dashboard/recruiter';
+    case 'faculty':
+      return '/dashboard/faculty';
+    case 'institution_admin':
+      return '/dashboard/admin';
+    default:
+      return '/dashboard';
+  }
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
@@ -16,8 +31,15 @@ export async function GET(request: NextRequest) {
       if (!error && data?.user) {
         console.log('User authenticated successfully:', data.user.email);
 
-        // Redirect to bootstrap page for client-side processing
-        return NextResponse.redirect(`${origin}/bootstrap`);
+        // Get user role from metadata
+        const userRole = data.user.user_metadata?.role || 'student';
+        console.log('User role from metadata:', userRole);
+
+        // Determine redirect URL based on role
+        const redirectUrl = getRoleRedirectUrl(userRole);
+        console.log('Redirecting to:', redirectUrl);
+
+        return NextResponse.redirect(`${origin}${redirectUrl}`);
       } else {
         console.error('Auth error:', error);
         return NextResponse.redirect(

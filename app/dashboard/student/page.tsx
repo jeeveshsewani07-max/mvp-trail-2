@@ -49,15 +49,48 @@ export default function StudentDashboard() {
       if (!user) return;
 
       try {
+        // Try to get profile from API
         const response = await fetch('/api/bootstrap');
         if (response.ok) {
           const data = await response.json();
           setProfile(data);
         } else {
-          console.error('Failed to fetch profile');
+          console.error('Failed to fetch profile, using basic profile');
+          // Create a basic profile from user data
+          const basicProfile = {
+            profile: {
+              id: user.id,
+              full_name: user.user_metadata?.full_name || user.email || 'User',
+              email: user.email || '',
+              role: user.user_metadata?.role || 'student',
+              created_at: user.created_at,
+              updated_at: new Date().toISOString(),
+            },
+            role_data: {
+              student_id: user.id,
+              is_profile_complete: false,
+            },
+          };
+          setProfile(basicProfile);
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
+        // Create a basic profile from user data
+        const basicProfile = {
+          profile: {
+            id: user.id,
+            full_name: user.user_metadata?.full_name || user.email || 'User',
+            email: user.email || '',
+            role: user.user_metadata?.role || 'student',
+            created_at: user.created_at,
+            updated_at: new Date().toISOString(),
+          },
+          role_data: {
+            student_id: user.id,
+            is_profile_complete: false,
+          },
+        };
+        setProfile(basicProfile);
       } finally {
         setLoading(false);
       }
