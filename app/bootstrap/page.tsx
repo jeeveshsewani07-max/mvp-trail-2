@@ -7,21 +7,47 @@ import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
 
 export default function BootstrapPage() {
-  const { user, dbUser } = useAuth();
+  const { user, dbUser, loading: authLoading } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [timeoutReached, setTimeoutReached] = useState(false);
+
+  // Timeout effect
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      console.log('Bootstrap timeout reached');
+      setTimeoutReached(true);
+    }, 10000); // 10 second timeout
+
+    return () => clearTimeout(timeout);
+  }, []);
 
   useEffect(() => {
     const bootstrapUser = async () => {
+      console.log('Bootstrap page - Auth loading:', authLoading);
+      console.log('Bootstrap page - User:', user);
+      console.log('Bootstrap page - DBUser:', dbUser);
+
+      // Wait for auth to finish loading
+      if (authLoading && !timeoutReached) {
+        console.log('Auth still loading, waiting...');
+        return;
+      }
+
       if (!user) {
+        console.log('No user found, redirecting to login');
         // If no user, redirect to login
         router.push('/login');
         return;
       }
 
+      // Add a small delay to ensure session is fully established
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       try {
         setLoading(true);
+        console.log('Calling bootstrap API...');
 
         // Call bootstrap API
         const response = await fetch('/api/bootstrap', {
@@ -32,7 +58,9 @@ export default function BootstrapPage() {
           body: JSON.stringify({}),
         });
 
+        console.log('Bootstrap API response status:', response.status);
         const data = await response.json();
+        console.log('Bootstrap API response data:', data);
 
         if (response.ok && data.success) {
           // Redirect to role-specific dashboard
@@ -77,7 +105,7 @@ export default function BootstrapPage() {
     };
 
     bootstrapUser();
-  }, [user, router]);
+  }, [user, dbUser, authLoading, timeoutReached, router]);
 
   const getRoleRedirectUrl = (role: string): string => {
     switch (role) {
@@ -94,7 +122,7 @@ export default function BootstrapPage() {
     }
   };
 
-  if (loading) {
+  if (loading || (authLoading && !timeoutReached)) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
         <div className="text-center">
