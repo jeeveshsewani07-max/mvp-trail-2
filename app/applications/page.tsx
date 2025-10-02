@@ -52,7 +52,9 @@ export default function ApplicationsPage() {
         const queryParams = new URLSearchParams(
           filter !== 'all' ? { status: filter } : {}
         );
-        const response = await fetch('/api/applications?' + queryParams);
+        const response = await fetch(
+          '/api/applications?' + queryParams.toString()
+        );
         if (response.ok) {
           const data = await response.json();
           setApplications(data.applications);

@@ -63,7 +63,7 @@ export default function JobsPage() {
           ...(filters.location && { location: filters.location }),
         });
 
-        const response = await fetch('/api/jobs?' + queryParams);
+        const response = await fetch('/api/jobs?' + queryParams.toString());
         if (response.ok) {
           const data = await response.json();
           setJobs(data.jobs);
@@ -97,7 +97,7 @@ export default function JobsPage() {
         toast.success('Application submitted successfully!');
         // Refresh jobs to update application status
         const updatedResponse = await fetch(
-          '/api/jobs?' + new URLSearchParams(filters)
+          '/api/jobs?' + new URLSearchParams(filters).toString()
         );
         if (updatedResponse.ok) {
           const data = await updatedResponse.json();

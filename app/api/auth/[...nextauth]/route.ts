@@ -1,38 +1,41 @@
-import NextAuth from 'next-auth';
-import type { NextAuthOptions } from 'next-auth';
-import GoogleProvider from 'next-auth/providers/google';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
 
-const authOptions: NextAuthOptions = {
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-    }),
-  ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        (session.user as any).id = token.id;
-      }
-      return session;
-    },
-  },
-  pages: {
-    signIn: '/login',
-    signUp: '/signup',
-  },
-  session: {
-    strategy: 'jwt',
-  },
-  secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-for-build',
-};
+export async function GET(request: Request) {
+  const requestUrl = new URL(request.url);
+  const code = requestUrl.searchParams.get('code');
 
-const handler = NextAuth(authOptions);
+  if (code) {
+    const supabase = createRouteHandlerClient({ cookies });
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-export { handler as GET, handler as POST };
+    if (!error) {
+      return NextResponse.redirect(requestUrl.origin);
+    }
+  }
+
+  // Return the user to an error page with some instructions
+  return NextResponse.redirect(new URL('/auth/auth-code-error', request.url));
+}
+
+export async function POST(request: Request) {
+  const requestUrl = new URL(request.url);
+  const formData = await request.formData();
+  const email = String(formData.get('email'));
+  const password = String(formData.get('password'));
+  const supabase = createRouteHandlerClient({ cookies });
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    return NextResponse.redirect(
+      new URL(`/auth/error?error=${error.message}`, request.url)
+    );
+  }
+
+  return NextResponse.redirect(new URL('/dashboard', request.url));
+}
