@@ -81,10 +81,9 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           },
           {
             name: 'Approve Achievements',
-            href: '/approve',
+            href: '/achievements/approve',
             icon: Icons.checkCircle,
-            current: pathname.startsWith('/approve'),
-            badge: 5, // This would come from API
+            current: pathname.startsWith('/achievements/approve'),
           },
           {
             name: 'Create Event',
@@ -94,9 +93,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           },
           {
             name: 'My Events',
-            href: '/events/manage',
+            href: '/events/my-events',
             icon: Icons.calendar,
-            current: pathname.startsWith('/events/manage'),
+            current:
+              pathname.startsWith('/events/my-events') ||
+              pathname.startsWith('/events/manage'),
           },
           {
             name: 'Analytics',
@@ -192,7 +193,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* 
+      {/*
        * SIDEBAR CONTAINER:
        * - Mobile: Fixed overlay positioned with transform
        * - Desktop: Flex item that takes full height
@@ -298,4 +299,3 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     </>
   );
 }
-

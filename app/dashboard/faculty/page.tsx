@@ -248,19 +248,19 @@ export default function FacultyDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Icons.calendar className="h-5 w-5 text-blue-500" />
-                Create Events
+                Manage Events
               </CardTitle>
-              <CardDescription>Organize workshops and events</CardDescription>
+              <CardDescription>View and manage your events</CardDescription>
             </CardHeader>
             <CardContent>
               <Button
                 variant="outline"
                 className="w-full"
                 onClick={() => {
-                  window.location.href = '/events/create';
+                  window.location.href = '/events/my-events';
                 }}
               >
-                Create Event
+                Manage Events
                 {upcomingEvents.length > 0 && (
                   <Badge variant="secondary" className="ml-2">
                     {upcomingEvents.length} Active
