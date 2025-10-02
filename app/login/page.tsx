@@ -65,7 +65,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -74,8 +74,13 @@ export default function LoginPage() {
         toast.error(error.message);
       } else {
         toast.success('Successfully signed in!');
-        // Redirect to auth callback for role-based redirection
-        window.location.href = '/auth/callback';
+        console.log('Login successful, redirecting to auth callback...');
+
+        // Add a small delay to ensure session is established
+        setTimeout(() => {
+          console.log('Redirecting to /auth/callback');
+          window.location.href = '/auth/callback';
+        }, 1000);
       }
     } catch (error) {
       toast.error('An unexpected error occurred');
