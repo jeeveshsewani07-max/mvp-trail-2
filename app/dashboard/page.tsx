@@ -35,12 +35,21 @@ export default function DashboardPage() {
           return;
         }
 
-        console.log('User found:', session.user.email);
+        console.log('User found:', session.user.email || 'Anonymous user');
         console.log('User metadata:', session.user.user_metadata);
 
         // Get role from user metadata
         const userRole = session.user.user_metadata?.role || 'student';
         console.log('User role:', userRole);
+
+        // If user is anonymous and has no role, redirect to profile setup
+        if (!session.user.email && !userRole) {
+          console.log(
+            'Anonymous user with no role, redirecting to profile setup'
+          );
+          router.push('/profile');
+          return;
+        }
 
         setRedirecting(true);
 

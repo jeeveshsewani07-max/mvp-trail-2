@@ -129,6 +129,30 @@ export default function LoginPage() {
     }
   };
 
+  const handleAnonymousLogin = async () => {
+    setIsLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signInAnonymously();
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success(
+          'Signed in anonymously! Complete your profile to continue.'
+        );
+        console.log('Anonymous login successful, redirecting to profile...');
+        setTimeout(() => {
+          window.location.href = '/profile';
+        }, 1000);
+      }
+    } catch (error) {
+      toast.error('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true);
 
@@ -185,6 +209,20 @@ export default function LoginPage() {
                 <Icons.google className="mr-2 h-4 w-4" />
               )}
               Continue with Google
+            </Button>
+
+            <Button
+              onClick={handleAnonymousLogin}
+              disabled={isLoading}
+              className="w-full"
+              variant="secondary"
+            >
+              {isLoading ? (
+                <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Icons.user className="mr-2 h-4 w-4" />
+              )}
+              Continue Anonymously
             </Button>
 
             {/* Authentication Method Toggle */}

@@ -109,15 +109,24 @@ export default function SignUpPage() {
     setIsLoading(true);
 
     try {
-      // Sign up with password
-      const { data, error } = await supabase.auth.signUp({
+      // First, sign in anonymously to get a session
+      const { data: anonymousData, error: anonymousError } =
+        await supabase.auth.signInAnonymously();
+
+      if (anonymousError) {
+        toast.error(
+          'Failed to create anonymous session: ' + anonymousError.message
+        );
+        return;
+      }
+
+      // Update the anonymous user with email, password, and metadata
+      const { data, error } = await supabase.auth.updateUser({
         email: formData.email,
         password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullName,
-            role: formData.role,
-          },
+        data: {
+          full_name: formData.fullName,
+          role: formData.role,
         },
       });
 
@@ -126,26 +135,12 @@ export default function SignUpPage() {
         return;
       }
 
-      if (data.user && !data.session) {
-        toast.success(
-          'Account created! Please check your email and click the verification link to complete signup.'
-        );
-        // Show a message that they need to verify email
-        setFormData((prev) => ({
-          ...prev,
-          email: '',
-          password: '',
-          confirmPassword: '',
-        }));
-        return;
-      } else if (data.session) {
+      if (data.user) {
         toast.success('Account created successfully!');
         // Redirect to dashboard for role-based redirection
         router.push('/dashboard');
       } else {
-        toast.success(
-          'Account created! Please check your email to verify your account.'
-        );
+        toast.error('Account creation failed');
       }
     } catch (error) {
       toast.error('An unexpected error occurred');
@@ -155,16 +150,42 @@ export default function SignUpPage() {
   };
 
   const handleGoogleSignUp = async () => {
+    if (!formData.role) {
+      toast.error('Please select your role first');
+      return;
+    }
+
     setIsGoogleLoading(true);
 
     try {
+      // First, sign in anonymously to get a session
+      const { data: anonymousData, error: anonymousError } =
+        await supabase.auth.signInAnonymously();
+
+      if (anonymousError) {
+        toast.error(
+          'Failed to create anonymous session: ' + anonymousError.message
+        );
+        return;
+      }
+
+      // Update the anonymous user with role metadata
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: {
+          role: formData.role,
+        },
+      });
+
+      if (updateError) {
+        toast.error('Failed to set role: ' + updateError.message);
+        return;
+      }
+
+      // Now proceed with Google OAuth
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${getSiteUrl()}/dashboard`,
-          queryParams: {
-            role: formData.role || 'student',
-          },
         },
       });
 
