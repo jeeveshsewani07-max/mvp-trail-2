@@ -43,21 +43,32 @@ export default function StudentDashboard() {
   const { user, dbUser } = useAuth();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [achievements, setAchievements] = useState<any[]>([]);
+  const [portfolio, setPortfolio] = useState<any>(null);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       if (!user) return;
 
       try {
-        // Try to get profile from API
-        const response = await fetch('/api/bootstrap');
-        if (response.ok) {
-          const data = await response.json();
-          setProfile(data);
+        // Fetch profile
+        const profileResponse = await fetch('/api/student/profile');
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          setProfile({
+            profile: {
+              id: user.id,
+              full_name: user.user_metadata?.full_name || user.email || 'User',
+              email: user.email || '',
+              role: user.user_metadata?.role || 'student',
+              created_at: user.created_at,
+              updated_at: user.created_at || '',
+            },
+            role_data: profileData,
+          });
         } else {
-          console.error('Failed to fetch profile, using basic profile');
-          // Create a basic profile from user data
-          const basicProfile = {
+          console.error('Failed to fetch profile');
+          setProfile({
             profile: {
               id: user.id,
               full_name: user.user_metadata?.full_name || user.email || 'User',
@@ -70,33 +81,31 @@ export default function StudentDashboard() {
               student_id: user.id,
               is_profile_complete: false,
             },
-          };
-          setProfile(basicProfile);
+          });
+        }
+
+        // Fetch achievements
+        const achievementsResponse = await fetch('/api/student/achievements');
+        if (achievementsResponse.ok) {
+          const achievementsData = await achievementsResponse.json();
+          setAchievements(achievementsData);
+        }
+
+        // Fetch portfolio
+        const portfolioResponse = await fetch('/api/student/portfolio');
+        if (portfolioResponse.ok) {
+          const portfolioData = await portfolioResponse.json();
+          setPortfolio(portfolioData);
         }
       } catch (error) {
-        console.error('Error fetching profile:', error);
-        // Create a basic profile from user data
-        const basicProfile = {
-          profile: {
-            id: user.id,
-            full_name: user.user_metadata?.full_name || user.email || 'User',
-            email: user.email || '',
-            role: user.user_metadata?.role || 'student',
-            created_at: user.created_at,
-            updated_at: user.created_at || '',
-          },
-          role_data: {
-            student_id: user.id,
-            is_profile_complete: false,
-          },
-        };
-        setProfile(basicProfile);
+        console.error('Error fetching data:', error);
+        toast.error('Failed to fetch data');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProfile();
+    fetchData();
   }, [user]);
 
   if (loading) {
@@ -186,7 +195,12 @@ export default function StudentDashboard() {
               )}
 
               {!role_data?.is_profile_complete && (
-                <Button className="w-full">
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    window.location.href = '/profile';
+                  }}
+                >
                   <Icons.edit className="mr-2 h-4 w-4" />
                   Complete Profile
                 </Button>
@@ -208,8 +222,19 @@ export default function StudentDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button variant="outline" className="w-full">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  window.location.href = '/achievements';
+                }}
+              >
                 View Achievements
+                {achievements.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {achievements.length}
+                  </Badge>
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -223,7 +248,13 @@ export default function StudentDashboard() {
               <CardDescription>Discover jobs and internships</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button variant="outline" className="w-full">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  window.location.href = '/jobs';
+                }}
+              >
                 Browse Jobs
               </Button>
             </CardContent>
@@ -238,8 +269,19 @@ export default function StudentDashboard() {
               <CardDescription>Build your digital portfolio</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button variant="outline" className="w-full">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  window.location.href = '/portfolio';
+                }}
+              >
                 View Portfolio
+                {portfolio && (
+                  <Badge variant="secondary" className="ml-2">
+                    {portfolio.achievements?.length || 0} Achievements
+                  </Badge>
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -254,13 +296,66 @@ export default function StudentDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              <Icons.activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No recent activity</p>
-              <p className="text-sm">
-                Start by completing your profile or adding achievements
-              </p>
-            </div>
+            {achievements.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Icons.activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No recent activity</p>
+                <p className="text-sm">
+                  Start by completing your profile or adding achievements
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {achievements.slice(0, 5).map((achievement) => (
+                  <div
+                    key={achievement.id}
+                    className="flex items-center justify-between p-4 rounded-lg border"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`p-2 rounded-full ${
+                          achievement.status === 'approved'
+                            ? 'bg-green-100 dark:bg-green-900'
+                            : achievement.status === 'pending'
+                              ? 'bg-yellow-100 dark:bg-yellow-900'
+                              : 'bg-red-100 dark:bg-red-900'
+                        }`}
+                      >
+                        <Icons.trophy
+                          className={`h-4 w-4 ${
+                            achievement.status === 'approved'
+                              ? 'text-green-600 dark:text-green-400'
+                              : achievement.status === 'pending'
+                                ? 'text-yellow-600 dark:text-yellow-400'
+                                : 'text-red-600 dark:text-red-400'
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <p className="font-medium">{achievement.title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(
+                            achievement.created_at
+                          ).toLocaleDateString()}{' '}
+                          •{' '}
+                          {achievement.status.charAt(0).toUpperCase() +
+                            achievement.status.slice(1)}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        window.location.href = `/achievements/${achievement.id}`;
+                      }}
+                    >
+                      View
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
