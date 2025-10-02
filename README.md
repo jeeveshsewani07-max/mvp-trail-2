@@ -2,6 +2,10 @@
 
 🎓 **A comprehensive platform for verified student digital identities, achievements, and career opportunities.**
 
+[![Deployment Status](https://img.shields.io/github/deployments/jeeveshsewani07-max/mvp-trail-2/production?label=vercel&logo=vercel&logoColor=white)](https://mvp-trail-2.vercel.app)
+[![GitHub last commit](https://img.shields.io/github/last-commit/jeeveshsewani07-max/mvp-trail-2)](https://github.com/jeeveshsewani07-max/mvp-trail-2/commits/main)
+[![GitHub issues](https://img.shields.io/github/issues/jeeveshsewani07-max/mvp-trail-2)](https://github.com/jeeveshsewani07-max/mvp-trail-2/issues)
+
 ## Overview
 
 Smart Student Hub is a production-ready MVP that provides students with a verified digital portfolio, connects them with opportunities, and enables institutions to track student progress effectively.
@@ -307,6 +311,4 @@ For support and questions:
 
 ---
 
-**Smart Student Hub** - _Empowering every student with a verified digital identity_ 🚀#   T r i g g e r   V e r c e l   D e p l o y m e n t 
- 
- 
+**Smart Student Hub** - _Empowering every student with a verified digital identity_ 🚀
